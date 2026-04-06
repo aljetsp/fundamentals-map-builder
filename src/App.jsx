@@ -786,6 +786,8 @@ export default function App() {
   const [showReset,     setShowReset]     = useState(false);
   const [printMode,     setPrintMode]     = useState(false);
   const [fullscreen,    setFullscreen]    = useState(false);
+  const [mapScale,      setMapScale]      = useState(1);
+  const fsContainerRef = useRef(null);
   const [exportModal,   setExportModal]   = useState(false);
   const [copied,        setCopied]        = useState(false);
   const fileRef  = useRef(null);
@@ -802,6 +804,27 @@ export default function App() {
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
   }, [fullscreen]);
+
+  // Compute scale to fit map in fullscreen container (no scrollbars)
+  useEffect(() => {
+    if (!fullscreen || !fsContainerRef.current || !mapRef.current) { setMapScale(1); return; }
+    const computeScale = () => {
+      const container = fsContainerRef.current;
+      const map       = mapRef.current;
+      if (!container || !map) return;
+      // Available space: container minus toolbar (~44px)
+      const availW = container.clientWidth  - 32;
+      const availH = container.clientHeight - 60;
+      const mapW   = map.scrollWidth;
+      const mapH   = map.scrollHeight;
+      const scale  = Math.min(availW / mapW, availH / mapH, 1);
+      setMapScale(scale);
+    };
+    // Wait for render then compute
+    const t = setTimeout(computeScale, 50);
+    window.addEventListener('resize', computeScale);
+    return () => { clearTimeout(t); window.removeEventListener('resize', computeScale); };
+  }, [fullscreen, data]);
 
   const handleSave = async () => {
     setSaveStatus('saving');
@@ -955,20 +978,31 @@ export default function App() {
 
       {/* ── Map ── */}
       {tab === 'map' && (
-        <div style={fullscreen ? { position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, zIndex: 1500, background: '#fff', display: 'flex', flexDirection: 'column' } : {}}>
+        <div ref={fsContainerRef} style={fullscreen ? { position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, zIndex: 1500, background: '#fff', display: 'flex', flexDirection: 'column', overflow: 'hidden' } : {}}>
           <div className="no-print" style={{ padding: '7px 14px', borderBottom: '0.5px solid var(--color-border-tertiary)', display: 'flex', gap: 8, alignItems: 'center', background: 'var(--color-background-secondary)', flexShrink: 0 }}>
             {fullscreen && (
               <button onClick={() => setFullscreen(false)} style={{ background: 'transparent', border: '0.5px solid var(--color-border-secondary)', borderRadius: 5, padding: '4px 10px', fontSize: 12, cursor: 'pointer', marginRight: 4 }}>
                 ✕ Exit full screen
               </button>
             )}
-            <span style={{ fontSize: 11, color: 'var(--color-text-tertiary)' }}>Click any cell to edit inline · Enter to save · Esc to cancel</span>
+            <span style={{ fontSize: 11, color: 'var(--color-text-tertiary)' }}>
+              {fullscreen ? 'Esc to exit · Click any cell to edit' : 'Click any cell to edit inline · Enter to save · Esc to cancel'}
+            </span>
             <div style={{ flex: 1 }} />
             <Btn onClick={handlePdf}>{pdfLabel}</Btn>
           </div>
-          <div style={{ overflowX: 'auto', overflowY: 'auto', padding: 16, flex: fullscreen ? 1 : 'none' }}>
-            <MapTable data={data} editPath={editPath} setEditPath={setEditPath} setData={setData} mapRef={mapRef} />
-          </div>
+          {fullscreen ? (
+            /* Fullscreen: scale map to fit with no scrollbars */
+            <div style={{ flex: 1, display: 'flex', alignItems: 'flex-start', justifyContent: 'flex-start', overflow: 'hidden', padding: 16 }}>
+              <div style={{ transformOrigin: 'top left', transform: 'scale(' + mapScale + ')' }}>
+                <MapTable data={data} editPath={editPath} setEditPath={setEditPath} setData={setData} mapRef={mapRef} />
+              </div>
+            </div>
+          ) : (
+            <div style={{ overflowX: 'auto', padding: 16 }}>
+              <MapTable data={data} editPath={editPath} setEditPath={setEditPath} setData={setData} mapRef={mapRef} />
+            </div>
+          )}
         </div>
       )}
     </div>

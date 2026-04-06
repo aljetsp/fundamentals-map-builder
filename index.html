@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Fundamentals Map Builder</title>
+    <style>
+      *, *::before, *::after { box-sizing: border-box; }
+      body { margin: 0; font-family: system-ui, -apple-system, sans-serif; }
+      #root { min-height: 100vh; }
+
+      /* CSS variable fallbacks for environments without Claude's design tokens */
+      :root {
+        --font-sans: system-ui, -apple-system, sans-serif;
+        --color-background-primary: #ffffff;
+        --color-background-secondary: #f5f5f5;
+        --color-background-info: #e8f0fb;
+        --color-text-primary: #111111;
+        --color-text-secondary: #555555;
+        --color-text-tertiary: #888888;
+        --color-text-info: #1b3d6e;
+        --color-text-danger: #c0392b;
+        --color-border-primary: #cccccc;
+        --color-border-secondary: #dddddd;
+        --color-border-tertiary: #eeeeee;
+        --color-border-info: #1b3d6e;
+        --color-border-danger: #c0392b;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.jsx"></script>
+  </body>
+</html>

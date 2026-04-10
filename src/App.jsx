@@ -84,9 +84,9 @@ function applyUpdate(obj, path, value) {
 const INIT = {
   mapNum: '01', orgName: 'Your Organization Name', logo: null,
   layoutOutcomesFirst: false, layoutGroupByType: false,
-  mission: 'Enter your mission statement — the fundamental purpose your organization serves.',
-  vision: 'Enter your vision — what you aspire to become or achieve.',
-  values: 'Integrity · Excellence · Service · Innovation · Collaboration',
+  mission: 'Enter your mission statement - the fundamental purpose your organization serves.',
+  vision: 'Enter your vision - what you aspire to become or achieve.',
+  values: 'Integrity | Excellence | Service | Innovation | Collaboration',
   keyGoals: [
     { id: 'g1', name: 'Strategic Goal One', colorIdx: 0 },
     { id: 'g2', name: 'Strategic Goal Two', colorIdx: 1 },
@@ -158,14 +158,14 @@ function FoundationForm({ data, setData }) {
   return (
     <div style={{ maxWidth: 560 }}>
       <div style={{ display: 'grid', gridTemplateColumns: '120px 1fr', gap: '0 20px' }}>
-        <Field label="Map number" hint="2-digit prefix used in all codes (01–99)">
+        <Field label="Map number" hint="2-digit prefix used in all codes (01-99)">
           <input value={data.mapNum || '01'} onChange={e => f('mapNum')(e.target.value.replace(/\D/g, '').slice(0,2) || '01')} style={{ ...iStyle, maxWidth: 80 }} maxLength={2} />
         </Field>
         <Field label="Organization name">
           <input value={data.orgName} onChange={e => f('orgName')(e.target.value)} style={iStyle} />
         </Field>
       </div>
-      <Field label="Logo" hint="PNG or JPG — shown in the map header">
+      <Field label="Logo" hint="PNG or JPG - shown in the map header">
         <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
           <Btn onClick={() => logoRef.current?.click()}>Upload logo</Btn>
           {data.logo && <Btn onClick={() => setData(d => ({ ...d, logo: null }))} v="danger">Remove</Btn>}
@@ -175,7 +175,7 @@ function FoundationForm({ data, setData }) {
       </Field>
       <Field label="Mission" hint="Why your organization exists"><textarea value={data.mission} onChange={e => f('mission')(e.target.value)} rows={3} style={{ ...iStyle, resize: 'vertical' }} /></Field>
       <Field label="Vision"  hint="What you aspire to become"><textarea  value={data.vision}  onChange={e => f('vision')(e.target.value)}  rows={3} style={{ ...iStyle, resize: 'vertical' }} /></Field>
-      <Field label="Values"  hint="Guiding principles — separate with · or commas"><textarea value={data.values} onChange={e => f('values')(e.target.value)} rows={2} style={{ ...iStyle, resize: 'vertical' }} /></Field>
+      <Field label="Values"  hint="Guiding principles - separate with | or commas"><textarea value={data.values} onChange={e => f('values')(e.target.value)} rows={2} style={{ ...iStyle, resize: 'vertical' }} /></Field>
 
       {/* ── Layout options ── */}
       <div style={{ marginTop: 8, padding: 14, border: '0.5px solid var(--color-border-secondary)', borderRadius: 6, background: 'var(--color-background-secondary)' }}>
@@ -399,7 +399,7 @@ function EC({ path, value, editPath, setEditPath, setData, dark }) {
   const key = JSON.stringify(path);
   const editing = editPath === key;
   const isList = Array.isArray(value);
-  const display = isList ? value.map(v => `• ${v}`).join('\n') : (value || '');
+  const display = isList ? value.map(v => '- ' + v).join('\n') : (value || '');
   const raw     = isList ? value.join('\n')                    : (value || '');
   if (editing) {
     return (
@@ -773,6 +773,360 @@ async function exportToPptx(data) {
   }
 }
 
+
+// ── SVG Export ────────────────────────────────────────────────────────────────
+function exportToSvg(data) {
+  const PAL = [
+    { bg: '#1b3d6e', text: '#fff', light: '#d2e5f5' },
+    { bg: '#1a5c38', text: '#fff', light: '#c4edd6' },
+    { bg: '#6d1f78', text: '#fff', light: '#e8d3f4' },
+    { bg: '#b55000', text: '#fff', light: '#ffddb2' },
+    { bg: '#1a5c5c', text: '#fff', light: '#c4edee' },
+    { bg: '#7a1a2e', text: '#fff', light: '#f5c8d2' },
+    { bg: '#3a5a00', text: '#fff', light: '#d8f0a5' },
+    { bg: '#33337a', text: '#fff', light: '#d0d0f5' },
+  ];
+  const pc = idx => PAL[(idx || 0) % PAL.length];
+  const gColor = gid => { const g = data.keyGoals.find(g => g.id === gid); return g ? pc(g.colorIdx) : { bg: '#666', text: '#fff', light: '#ddd' }; };
+  const esc = s => (s || '').toString().replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+
+  // Column order — mirrors MapTable
+  const goalOrder = Object.fromEntries(data.keyGoals.map((g, i) => [g.id, i]));
+  const byGoal = (a, b) => (goalOrder[a.goalId] || 999) - (goalOrder[b.goalId] || 999);
+  const groupByType = data.layoutGroupByType || false;
+  const outFirst = data.layoutOutcomesFirst || false;
+
+  const spanBuilder = arr => {
+    const spans = []; let i = 0;
+    while (i < arr.length) {
+      const gid = arr[i].goalId || null;
+      const goal = gid ? data.keyGoals.find(g => g.id === gid) : null;
+      let c = 0;
+      while (i < arr.length && (arr[i].goalId || null) === gid) { c++; i++; }
+      spans.push({ goal, gid, count: c });
+    }
+    return spans;
+  };
+
+  let allProcs = [], goalHdrCells = [], opCount = 0, spCount = 0;
+  if (groupByType) {
+    const sOp = [...data.operatingProcesses].sort(byGoal);
+    const sSp = [...data.supportingProcesses].sort(byGoal);
+    allProcs = [...sOp.map(p => ({ proc: p, side: 'op', goalId: p.goalId })), ...sSp.map(p => ({ proc: p, side: 'sp', goalId: p.goalId }))];
+    opCount = Math.max(sOp.length, 1); spCount = Math.max(sSp.length, 1);
+    goalHdrCells = [...spanBuilder(sOp.map(p => ({ goalId: p.goalId }))), ...spanBuilder(sSp.map(p => ({ goalId: p.goalId })))];
+  } else {
+    const seen = new Set();
+    for (const g of data.keyGoals) {
+      for (const p of data.operatingProcesses)  if (p.goalId === g.id) { allProcs.push({ proc: p, side: 'op', goalId: g.id }); seen.add(p.id); }
+      for (const p of data.supportingProcesses) if (p.goalId === g.id) { allProcs.push({ proc: p, side: 'sp', goalId: g.id }); seen.add(p.id); }
+    }
+    for (const p of data.operatingProcesses)  if (!seen.has(p.id)) { allProcs.push({ proc: p, side: 'op', goalId: null }); seen.add(p.id); }
+    for (const p of data.supportingProcesses) if (!seen.has(p.id)) { allProcs.push({ proc: p, side: 'sp', goalId: null }); seen.add(p.id); }
+    goalHdrCells = spanBuilder(allProcs.map(x => ({ goalId: x.goalId })));
+  }
+
+  const sortedOut = [...data.outcomes].sort((a, b) => (goalOrder[a.goalId] || 999) - (goalOrder[b.goalId] || 999));
+  const outSpans  = spanBuilder(sortedOut.map(o => ({ goalId: o.goalId })));
+
+  const procCols  = allProcs.length;
+  const totCols   = Math.max(procCols, 3);
+  const fillCols  = totCols - procCols;
+  const outCount  = Math.max(sortedOut.length, 1);
+
+  // Dimensions
+  const SB = 28, COL = 162, PAD = 6, F = 9; // F = base font size
+  const W      = SB + totCols * COL;
+  const outColW = Math.max(Math.floor((W - SB) / outCount), 120);
+  const outW   = SB + outCount * outColW;
+
+  const hdrAlignOut = outFirst && sortedOut.length > 0;
+  const hdrCols  = hdrAlignOut ? Math.max(outCount, 3) : totCols;
+  const hdrColW  = hdrAlignOut ? outColW : COL;
+  const hdrW     = SB + hdrCols * hdrColW;
+  const hdrFill  = hdrCols - (hdrAlignOut ? outCount : procCols);
+  const hdrGoals = hdrAlignOut ? outSpans : goalHdrCells;
+  const c1 = Math.ceil(hdrCols / 3), c2 = Math.ceil((hdrCols - c1) / 2), c3 = hdrCols - c1 - c2;
+
+  // Text wrapping
+  const wrap = (text, maxW, fs) => {
+    if (!text) return [];
+    const charW = fs * 0.52;
+    const maxC  = Math.max(1, Math.floor((maxW - PAD * 2) / charW));
+    const words = (text + '').split(' ');
+    const lines = []; let line = '';
+    for (const w of words) {
+      const t = line ? line + ' ' + w : w;
+      if (t.length > maxC && line) { lines.push(line); line = w; }
+      else line = t;
+    }
+    if (line) lines.push(line);
+    return lines;
+  };
+
+  // Compute height needed to fit wrapped text
+  const textH = (text, colW, fs, lineH) => {
+    const lines = wrap(text, colW, fs);
+    return Math.max(lines.length, 1) * fs * (lineH || 1.45) + PAD * 2;
+  };
+
+  // Draw text lines into SVG
+  const drawText = (x, ry, colW, text, fs, color, bold, align, lineH) => {
+    if (!text) return;
+    const lh   = (lineH || 1.45) * fs;
+    const lines = wrap(text, colW, fs);
+    const anch  = align === 'center' ? 'middle' : 'start';
+    const tx    = align === 'center' ? x + colW / 2 : x + PAD;
+    lines.forEach((ln, i) => {
+      els.push('<text x="' + tx + '" y="' + (ry + PAD + fs + i * lh) + '" font-size="' + fs + '" font-family="Arial,sans-serif" fill="' + color + '" text-anchor="' + anch + '"' + (bold ? ' font-weight="bold"' : '') + '>' + esc(ln) + '</text>');
+    });
+  };
+
+  const rect = (x, ry, w, h, fill) => {
+    els.push('<rect x="' + x + '" y="' + ry + '" width="' + w + '" height="' + h + '" fill="' + fill + '" stroke="#bbb" stroke-width="0.5"/>');
+  };
+
+  const vLabel = (x, ry, w, h, text) => {
+    const cx = x + w / 2, cy = ry + h / 2;
+    els.push('<text x="' + cx + '" y="' + cy + '" font-size="7" font-family="Arial,sans-serif" fill="#fff" text-anchor="middle" dominant-baseline="middle" font-weight="bold" letter-spacing="1.2" transform="rotate(-90,' + cx + ',' + cy + ')">' + esc(text.toUpperCase()) + '</text>');
+  };
+
+  const els = [];
+  let y = 0;
+
+  // ── HEADER (Foundations + Key Goals) ────────────────────────────────────
+  const H_ORG  = 38;
+  const H_MVV  = Math.max(
+    textH(data.mission, c1 * hdrColW, F, 1.4),
+    textH(data.vision,  c2 * hdrColW, F, 1.4),
+    textH(data.values,  c3 * hdrColW, F, 1.4),
+    44
+  );
+  const H_GOAL = 28;
+
+  // Org name row
+  rect(0, y, hdrW, H_ORG + H_MVV, '#0d1b2a');  // sidebar Foundations
+  vLabel(0, y, SB, H_ORG + H_MVV, 'Foundations');
+  rect(SB, y, hdrW - SB, H_ORG, '#0d1b2a');
+  drawText(SB + PAD, y, hdrW - SB - PAD, data.orgName || '', 15, '#fff', true, 'left');
+  y += H_ORG;
+
+  // MVV row
+  const mvv = [
+    { span: c1, bg: '#e8f0fb', text: data.mission, color: '#222', label: 'MISSION', lc: '#1b3d6e' },
+    { span: c2, bg: '#1b3d6e', text: data.vision,  color: '#fff', label: 'VISION',  lc: '#aaa' },
+    { span: c3, bg: '#1e1e1e', text: data.values,  color: '#fff', label: 'VALUES',  lc: '#aaa' },
+  ];
+  let mx = SB;
+  mvv.forEach(({ span, bg, text, color, label, lc }) => {
+    const cw = span * hdrColW;
+    rect(mx, y, cw, H_MVV, bg);
+    els.push('<text x="' + (mx + PAD) + '" y="' + (y + PAD + 8) + '" font-size="7" font-family="Arial,sans-serif" fill="' + lc + '" font-weight="bold" letter-spacing="0.5">' + label + '</text>');
+    drawText(mx, y + 10, cw, text, F, color, false, 'left');
+    mx += cw;
+  });
+  y += H_MVV;
+
+  // Key Goals row
+  rect(0, y, SB, H_GOAL, '#1b3d6e');
+  vLabel(0, y, SB, H_GOAL, 'Key Goals');
+  let gx = SB;
+  hdrGoals.forEach(({ goal, count }) => {
+    const cw = count * hdrColW;
+    const c  = goal ? pc(goal.colorIdx) : { bg: '#666', text: '#fff' };
+    rect(gx, y, cw, H_GOAL, c.bg);
+    drawText(gx, y, cw, goal ? goal.name : 'Unassigned', 12, c.text, true, 'center');
+    gx += cw;
+  });
+  if (hdrFill > 0) rect(gx, y, hdrFill * hdrColW, H_GOAL, '#888');
+  y += H_GOAL;
+
+  // ── DRAW OUTCOMES ────────────────────────────────────────────────────────
+  const drawOutcomes = startY => {
+    let oy = startY;
+    const H_OG  = 26;
+    // Compute row heights dynamically
+    const H_ON  = Math.max(...sortedOut.map(o => textH(o.name, outColW, 10, 1.4) + (o.owner ? 14 : 0)), 44);
+    const H_OM  = Math.max(...sortedOut.map(o => {
+      if (!o.measures || !o.measures.length) return 30;
+      return o.measures.reduce((acc, m) => acc + textH((m.code ? m.code + '  ' : '') + (m.text || ''), outColW, 8, 1.35) + (m.measureOwner ? 12 : 0), PAD * 2 + 14);
+    }), 44);
+    const outH = H_OG + H_ON + H_OM;
+
+    // Sidebar
+    rect(0, oy, SB, outH, '#555');
+    vLabel(0, oy, SB, outH, 'Outcomes');
+
+    // Goal spans
+    let ox = SB;
+    outSpans.forEach(({ goal, count }) => {
+      const cw = count * outColW;
+      const c  = goal ? pc(goal.colorIdx) : { bg: '#666', text: '#fff' };
+      rect(ox, oy, cw, H_OG, c.bg);
+      drawText(ox, oy, cw, goal ? goal.name : 'Unassigned', 10, c.text, true, 'center');
+      ox += cw;
+    });
+    oy += H_OG;
+
+    // Outcome names + owners
+    sortedOut.forEach((o, i) => {
+      const c = gColor(o.goalId);
+      const ox2 = SB + i * outColW;
+      rect(ox2, oy, outColW, H_ON, c.light);
+      if (o.code) els.push('<text x="' + (ox2 + outColW / 2) + '" y="' + (oy + 10) + '" font-size="7" font-family="Arial,sans-serif" fill="#777" text-anchor="middle">' + esc(o.code) + '</text>');
+      drawText(ox2, oy + 6, outColW, o.name, 10, '#222', true, 'center');
+      if (o.owner) {
+        const owY = oy + H_ON - 14;
+        els.push('<text x="' + (ox2 + outColW / 2) + '" y="' + owY + '" font-size="8" font-family="Arial,sans-serif" fill="#555" text-anchor="middle" font-style="italic">' + esc(o.owner) + '</text>');
+      }
+    });
+    oy += H_ON;
+
+    // Outcome measures
+    sortedOut.forEach((o, i) => {
+      const c = gColor(o.goalId);
+      const ox2 = SB + i * outColW;
+      rect(ox2, oy, outColW, H_OM, c.light);
+      els.push('<text x="' + (ox2 + PAD) + '" y="' + (oy + PAD + 8) + '" font-size="6.5" font-family="Arial,sans-serif" fill="#777" font-weight="bold" letter-spacing="0.5">OUTCOME MEASURES</text>');
+      let my = oy + PAD + 8 + 11;
+      (o.measures || []).forEach(m => {
+        if (my > oy + H_OM - 8) return;
+        const label = (m.code ? m.code + '  ' : '') + (m.text || '');
+        const lns   = wrap(label, outColW, 8);
+        lns.forEach(ln => {
+          if (my > oy + H_OM - 8) return;
+          els.push('<text x="' + (ox2 + PAD) + '" y="' + my + '" font-size="8" font-family="Arial,sans-serif" fill="#222">' + esc(ln) + '</text>');
+          my += 11;
+        });
+        if (m.measureOwner && my <= oy + H_OM - 8) {
+          els.push('<text x="' + (ox2 + PAD + 6) + '" y="' + my + '" font-size="7.5" font-family="Arial,sans-serif" fill="#555" font-style="italic">' + esc(m.measureOwner) + '</text>');
+          my += 10;
+        }
+      });
+    });
+    return oy + H_OM;
+  };
+
+  // ── DRAW PROCESSES ───────────────────────────────────────────────────────
+  const drawProcesses = startY => {
+    let py = startY;
+
+    // Dynamic row heights: measure tallest cell in each row
+    const H_OPS  = 18; // Op/Sp label row — fixed short
+    const H_PN   = Math.max(...allProcs.map(({ proc }) =>
+      textH(proc.name, COL, 11, 1.35) + (proc.processOwner ? 14 : 0) + 10
+    ), 44);
+    const H_SUB  = Math.max(...allProcs.map(({ proc }) => {
+      const subs = proc.subProcesses || [];
+      if (!subs.length) return 30;
+      return subs.reduce((acc, s) => acc + textH(s, COL, 9, 1.35), PAD * 2);
+    }), 60);
+    const H_PM   = Math.max(...allProcs.map(({ proc }) => {
+      const ms = proc.processMeasures || [];
+      if (!ms.length) return 30;
+      return ms.reduce((acc, m) => acc + textH((m.code ? m.code + '  ' : '') + (m.text || ''), COL, 8, 1.35) + (m.measureOwner ? 12 : 0), PAD * 2 + 16);
+    }), 44);
+
+    const procH = H_OPS + H_PN + H_SUB + H_PM;
+
+    // Sidebar
+    rect(0, py, SB, procH, '#3a3a3a');
+    vLabel(0, py, SB, procH, 'Core Processes');
+
+    // Op/Sp label row
+    allProcs.forEach(({ proc, side }, i) => {
+      const bg = side === 'op' ? '#2c3e50' : '#445566';
+      const px = SB + i * COL;
+      rect(px, py, COL, H_OPS, bg);
+      drawText(px, py - 2, COL, side === 'op' ? 'Operating' : 'Supporting', 8, '#fff', false, 'center');
+    });
+    if (fillCols > 0) rect(SB + procCols * COL, py, fillCols * COL, H_OPS, '#888');
+    py += H_OPS;
+
+    // Process name + owner
+    allProcs.forEach(({ proc, goalId }, i) => {
+      const c  = gColor(goalId);
+      const px = SB + i * COL;
+      rect(px, py, COL, H_PN, c.bg);
+      if (proc.code) els.push('<text x="' + (px + PAD) + '" y="' + (py + PAD + 7) + '" font-size="7" font-family="Arial,sans-serif" fill="rgba(255,255,255,0.7)">' + esc(proc.code) + '</text>');
+      drawText(px, py + 6, COL, proc.name, 11, c.text, true, 'left');
+      if (proc.processOwner) {
+        const owY = py + H_PN - 14;
+        rect(px, owY, COL, 14, 'rgba(0,0,0,0.15)');
+        els.push('<text x="' + (px + PAD) + '" y="' + (owY + 10) + '" font-size="8" font-family="Arial,sans-serif" fill="rgba(255,255,255,0.9)" font-style="italic">' + esc(proc.processOwner) + '</text>');
+      }
+    });
+    if (fillCols > 0) rect(SB + procCols * COL, py, fillCols * COL, H_PN, '#888');
+    py += H_PN;
+
+    // Sub-processes
+    allProcs.forEach(({ proc }, i) => {
+      const px = SB + i * COL;
+      rect(px, py, COL, H_SUB, '#fff');
+      let sy = py + PAD + 10;
+      (proc.subProcesses || []).forEach(s => {
+        if (sy > py + H_SUB - 8) return;
+        const lns = wrap(s, COL - PAD * 2 - 8, 9);
+        lns.forEach((ln, li) => {
+          if (sy > py + H_SUB - 8) return;
+          els.push('<text x="' + (px + PAD + (li === 0 ? 0 : 8)) + '" y="' + sy + '" font-size="9" font-family="Arial,sans-serif" fill="#222">' + (li === 0 ? '&#8226; ' : '') + esc(ln) + '</text>');
+          sy += 13;
+        });
+      });
+    });
+    if (fillCols > 0) rect(SB + procCols * COL, py, fillCols * COL, H_SUB, '#f5f5f5');
+    py += H_SUB;
+
+    // Process measures
+    allProcs.forEach(({ proc, goalId }, i) => {
+      const c  = gColor(goalId);
+      const px = SB + i * COL;
+      rect(px, py, COL, H_PM, c.light);
+      els.push('<text x="' + (px + PAD) + '" y="' + (py + PAD + 8) + '" font-size="6.5" font-family="Arial,sans-serif" fill="#777" font-weight="bold" letter-spacing="0.5">PROCESS MEASURES</text>');
+      let my = py + PAD + 8 + 12;
+      (proc.processMeasures || []).forEach(m => {
+        if (my > py + H_PM - 8) return;
+        const label = (m.code ? m.code + '  ' : '') + (m.text || '');
+        const lns   = wrap(label, COL, 8);
+        lns.forEach(ln => {
+          if (my > py + H_PM - 8) return;
+          els.push('<text x="' + (px + PAD) + '" y="' + my + '" font-size="8" font-family="Arial,sans-serif" fill="#222">' + esc(ln) + '</text>');
+          my += 11;
+        });
+        if (m.measureOwner && my <= py + H_PM - 8) {
+          els.push('<text x="' + (px + PAD + 6) + '" y="' + my + '" font-size="7.5" font-family="Arial,sans-serif" fill="#555" font-style="italic">' + esc(m.measureOwner) + '</text>');
+          my += 11;
+        }
+      });
+    });
+    if (fillCols > 0) rect(SB + procCols * COL, py, fillCols * COL, H_PM, '#f5f5f5');
+    return py + H_PM;
+  };
+
+  // ── Draw in layout order ─────────────────────────────────────────────────
+  if (outFirst) {
+    y = drawOutcomes(y);
+    y = drawProcesses(y);
+  } else {
+    y = drawProcesses(y);
+    y = drawOutcomes(y);
+  }
+
+  const svgW = Math.max(W, outW, hdrW);
+  const nl = String.fromCharCode(10);
+  const svgStr = '<svg xmlns="http://www.w3.org/2000/svg" width="' + svgW + '" height="' + y + '" viewBox="0 0 ' + svgW + ' ' + y + '">' + nl + els.join(nl) + nl + '</svg>';
+
+  const blob = new Blob([svgStr], { type: 'image/svg+xml' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = (data.orgName || 'Map').replace(/[^a-z0-9]/gi, '_') + '_Fundamentals_Map.svg';
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+
 // exportToPdf is handled via printMode state in the App component (see handlePdf)
 
 // ── Main App ──────────────────────────────────────────────────────────────────
@@ -783,6 +1137,7 @@ export default function App() {
   const [editPath,      setEditPath]      = useState(null);
   const [saveStatus,    setSaveStatus]    = useState(null);
   const [pptxStatus,    setPptxStatus]    = useState(null);
+  const [svgStatus,     setSvgStatus]     = useState(null);
   const [showReset,     setShowReset]     = useState(false);
   const [printMode,     setPrintMode]     = useState(false);
   const [fullscreen,    setFullscreen]    = useState(false);
@@ -838,6 +1193,12 @@ export default function App() {
     catch (e) { console.error(e); setPptxStatus('error'); setTimeout(() => setPptxStatus(null), 3000); }
   };
 
+  const handleSvg = () => {
+    setSvgStatus('loading');
+    try { exportToSvg(data); setSvgStatus(null); }
+    catch(e) { console.error(e); setSvgStatus('error'); setTimeout(() => setSvgStatus(null), 3000); }
+  };
+
   const handlePdf = () => {
     setTab('map');
     setTimeout(() => setPrintMode(true), 100);
@@ -870,7 +1231,7 @@ export default function App() {
     <button key={t} onClick={() => setTab(t)} style={{ background: tab === t ? 'var(--color-background-info)' : 'transparent', color: tab === t ? 'var(--color-text-info)' : 'var(--color-text-secondary)', border: '0.5px solid ' + (tab === t ? 'var(--color-border-info)' : 'var(--color-border-secondary)'), borderRadius: 5, padding: '4px 12px', fontSize: 12, cursor: 'pointer', fontFamily: 'inherit' }}>{label}</button>
   );
 
-  const saveLabel = saveStatus === 'saving' ? 'Saving...' : saveStatus === 'saved' ? 'Saved...' : saveStatus === 'error' ? 'Error!' : 'Save';
+  const saveLabel = saveStatus === 'saving' ? 'Saving...' : saveStatus === 'saved' ? 'Saved' : saveStatus === 'error' ? 'Error!' : 'Save';
   const saveV     = saveStatus === 'saved' ? 'success' : saveStatus === 'error' ? 'danger' : 'default';
   const pptxLabel = pptxStatus === 'loading' ? 'Saving...' : pptxStatus === 'error' ? 'Failed' : 'Export to PowerPoint';
   const pdfLabel  = 'Export to PDF';
@@ -946,12 +1307,13 @@ export default function App() {
         {navBtn('map', 'Preview map')}
         {tab === 'map' && (
           <button onClick={() => setFullscreen(f => !f)} title={fullscreen ? 'Exit full screen' : 'Full screen'} style={{ background: 'transparent', border: '0.5px solid var(--color-border-secondary)', borderRadius: 5, padding: '4px 10px', fontSize: 13, cursor: 'pointer', lineHeight: 1 }}>
-            {fullscreen ? '✕  Exit full screen' : '⛶  Full screen'}
+            {fullscreen ? 'X  Exit full screen' : '[ ]  Full screen'}
           </button>
         )}
         <div style={{ flex: 1 }} />
         <Btn onClick={handleSave} v={saveV} disabled={saveStatus === 'saving'}>{saveLabel}</Btn>
         <Btn onClick={handlePptx} v="primary" disabled={pptxStatus === 'loading'}>{pptxLabel}</Btn>
+        <Btn onClick={handleSvg} disabled={svgStatus === 'loading'}>{svgStatus === 'loading' ? 'Generating...' : 'Export SVG'}</Btn>
         <Btn onClick={openExportModal}>Export JSON</Btn>
         <Btn onClick={() => fileRef.current?.click()}>Import JSON</Btn>
         <Btn onClick={() => setShowReset(true)} v="danger">Reset</Btn>
@@ -982,11 +1344,11 @@ export default function App() {
           <div className="no-print" style={{ padding: '7px 14px', borderBottom: '0.5px solid var(--color-border-tertiary)', display: 'flex', gap: 8, alignItems: 'center', background: 'var(--color-background-secondary)', flexShrink: 0 }}>
             {fullscreen && (
               <button onClick={() => setFullscreen(false)} style={{ background: 'transparent', border: '0.5px solid var(--color-border-secondary)', borderRadius: 5, padding: '4px 10px', fontSize: 12, cursor: 'pointer', marginRight: 4 }}>
-                ✕ Exit full screen
+                X Exit full screen
               </button>
             )}
             <span style={{ fontSize: 11, color: 'var(--color-text-tertiary)' }}>
-              {fullscreen ? 'Esc to exit · Click any cell to edit' : 'Click any cell to edit inline · Enter to save · Esc to cancel'}
+              {fullscreen ? 'Esc to exit - Click any cell to edit' : 'Click any cell to edit inline - Enter to save - Esc to cancel'}
             </span>
             <div style={{ flex: 1 }} />
             <Btn onClick={handlePdf}>{pdfLabel}</Btn>

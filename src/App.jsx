@@ -835,7 +835,7 @@ function exportToSvg(data) {
   const outCount  = Math.max(sortedOut.length, 1);
 
   // Dimensions
-  const SB = 28, COL = 162, PAD = 6, F = 9; // F = base font size
+  const SB = 44, COL = 162, PAD = 5, F = 11; // F = base font size
   const W      = SB + totCols * COL;
   const outColW = Math.max(Math.floor((W - SB) / outCount), 120);
   const outW   = SB + outCount * outColW;
@@ -888,7 +888,7 @@ function exportToSvg(data) {
 
   const vLabel = (x, ry, w, h, text) => {
     const cx = x + w / 2, cy = ry + h / 2;
-    els.push('<text x="' + cx + '" y="' + cy + '" font-size="7" font-family="Arial,sans-serif" fill="#fff" text-anchor="middle" dominant-baseline="middle" font-weight="bold" letter-spacing="1.2" transform="rotate(-90,' + cx + ',' + cy + ')">' + esc(text.toUpperCase()) + '</text>');
+    els.push('<text x="' + cx + '" y="' + cy + '" font-size="7.5" font-family="Arial,sans-serif" fill="#fff" text-anchor="middle" dominant-baseline="middle" font-weight="bold" letter-spacing="0.8" transform="rotate(-90,' + cx + ',' + cy + ')">' + esc(text.toUpperCase()) + '</text>');
   };
 
   const els = [];
@@ -902,13 +902,13 @@ function exportToSvg(data) {
     textH(data.values,  c3 * hdrColW, F, 1.4),
     44
   );
-  const H_GOAL = 28;
+  const H_GOAL = 80;
 
   // Org name row
   rect(0, y, hdrW, H_ORG + H_MVV, '#0d1b2a');  // sidebar Foundations
   vLabel(0, y, SB, H_ORG + H_MVV, 'Foundations');
   rect(SB, y, hdrW - SB, H_ORG, '#0d1b2a');
-  drawText(SB + PAD, y, hdrW - SB - PAD, data.orgName || '', 15, '#fff', true, 'left');
+  drawText(SB + PAD, y, hdrW - SB - PAD, data.orgName || '', 17, '#fff', true, 'left');
   y += H_ORG;
 
   // MVV row
@@ -921,7 +921,7 @@ function exportToSvg(data) {
   mvv.forEach(({ span, bg, text, color, label, lc }) => {
     const cw = span * hdrColW;
     rect(mx, y, cw, H_MVV, bg);
-    els.push('<text x="' + (mx + PAD) + '" y="' + (y + PAD + 8) + '" font-size="7" font-family="Arial,sans-serif" fill="' + lc + '" font-weight="bold" letter-spacing="0.5">' + label + '</text>');
+    els.push('<text x="' + (mx + PAD) + '" y="' + (y + PAD + 9) + '" font-size="8" font-family="Arial,sans-serif" fill="' + lc + '" font-weight="bold" letter-spacing="0.5">' + label + '</text>');
     drawText(mx, y + 10, cw, text, F, color, false, 'left');
     mx += cw;
   });
@@ -935,7 +935,7 @@ function exportToSvg(data) {
     const cw = count * hdrColW;
     const c  = goal ? pc(goal.colorIdx) : { bg: '#666', text: '#fff' };
     rect(gx, y, cw, H_GOAL, c.bg);
-    drawText(gx, y, cw, goal ? goal.name : 'Unassigned', 12, c.text, true, 'center');
+    drawText(gx, y, cw, goal ? goal.name : 'Unassigned', 13, c.text, true, 'center');
     gx += cw;
   });
   if (hdrFill > 0) rect(gx, y, hdrFill * hdrColW, H_GOAL, '#888');
@@ -944,9 +944,13 @@ function exportToSvg(data) {
   // ── DRAW OUTCOMES ────────────────────────────────────────────────────────
   const drawOutcomes = startY => {
     let oy = startY;
-    const H_OG  = 26;
+    const H_OG  = 38;
     // Compute row heights dynamically
-    const H_ON  = Math.max(...sortedOut.map(o => textH(o.name, outColW, 10, 1.4) + (o.owner ? 14 : 0)), 44);
+    const H_ON  = Math.max(...sortedOut.map(o => {
+      const nameH  = textH(o.name, outColW, 10, 1.4);
+      const ownerH = o.owner ? textH(o.owner, outColW, 8, 1.35) + 4 : 0;
+      return nameH + ownerH + PAD * 2 + 8; // extra top padding for code label
+    }), 50);
     const H_OM  = Math.max(...sortedOut.map(o => {
       if (!o.measures || !o.measures.length) return 30;
       return o.measures.reduce((acc, m) => acc + textH((m.code ? m.code + '  ' : '') + (m.text || ''), outColW, 8, 1.35) + (m.measureOwner ? 12 : 0), PAD * 2 + 14);
@@ -963,21 +967,36 @@ function exportToSvg(data) {
       const cw = count * outColW;
       const c  = goal ? pc(goal.colorIdx) : { bg: '#666', text: '#fff' };
       rect(ox, oy, cw, H_OG, c.bg);
-      drawText(ox, oy, cw, goal ? goal.name : 'Unassigned', 10, c.text, true, 'center');
+      drawText(ox, oy, cw, goal ? goal.name : 'Unassigned', 12, c.text, true, 'center');
       ox += cw;
     });
     oy += H_OG;
 
-    // Outcome names + owners
+    // Outcome names + owners — stacked: code -> name lines -> owner lines
     sortedOut.forEach((o, i) => {
       const c = gColor(o.goalId);
       const ox2 = SB + i * outColW;
       rect(ox2, oy, outColW, H_ON, c.light);
-      if (o.code) els.push('<text x="' + (ox2 + outColW / 2) + '" y="' + (oy + 10) + '" font-size="7" font-family="Arial,sans-serif" fill="#777" text-anchor="middle">' + esc(o.code) + '</text>');
-      drawText(ox2, oy + 6, outColW, o.name, 10, '#222', true, 'center');
+      let textY = oy + PAD;
+      if (o.code) {
+        textY += 8;
+        els.push('<text x="' + (ox2 + outColW / 2) + '" y="' + textY + '" font-size="7" font-family="Arial,sans-serif" fill="#777" text-anchor="middle">' + esc(o.code) + '</text>');
+        textY += 4;
+      }
+      // Name (bold, center)
+      const nameLines = wrap(o.name, outColW, 10);
+      nameLines.forEach(ln => {
+        textY += 13;
+        els.push('<text x="' + (ox2 + outColW / 2) + '" y="' + textY + '" font-size="11" font-family="Arial,sans-serif" fill="#222" text-anchor="middle" font-weight="bold">' + esc(ln) + '</text>');
+      });
+      // Owner (italic, center, below name)
       if (o.owner) {
-        const owY = oy + H_ON - 14;
-        els.push('<text x="' + (ox2 + outColW / 2) + '" y="' + owY + '" font-size="8" font-family="Arial,sans-serif" fill="#555" text-anchor="middle" font-style="italic">' + esc(o.owner) + '</text>');
+        textY += 6;
+        const ownerLines = wrap(o.owner, outColW, 8);
+        ownerLines.forEach(ln => {
+          textY += 11;
+          els.push('<text x="' + (ox2 + outColW / 2) + '" y="' + textY + '" font-size="9" font-family="Arial,sans-serif" fill="#555" text-anchor="middle" font-style="italic">' + esc(ln) + '</text>');
+        });
       }
     });
     oy += H_ON;
@@ -987,7 +1006,7 @@ function exportToSvg(data) {
       const c = gColor(o.goalId);
       const ox2 = SB + i * outColW;
       rect(ox2, oy, outColW, H_OM, c.light);
-      els.push('<text x="' + (ox2 + PAD) + '" y="' + (oy + PAD + 8) + '" font-size="6.5" font-family="Arial,sans-serif" fill="#777" font-weight="bold" letter-spacing="0.5">OUTCOME MEASURES</text>');
+      els.push('<text x="' + (ox2 + PAD) + '" y="' + (oy + PAD + 9) + '" font-size="7.5" font-family="Arial,sans-serif" fill="#777" font-weight="bold" letter-spacing="0.5">OUTCOME MEASURES</text>');
       let my = oy + PAD + 8 + 11;
       (o.measures || []).forEach(m => {
         if (my > oy + H_OM - 8) return;
@@ -1012,10 +1031,12 @@ function exportToSvg(data) {
     let py = startY;
 
     // Dynamic row heights: measure tallest cell in each row
-    const H_OPS  = 18; // Op/Sp label row — fixed short
-    const H_PN   = Math.max(...allProcs.map(({ proc }) =>
-      textH(proc.name, COL, 11, 1.35) + (proc.processOwner ? 14 : 0) + 10
-    ), 44);
+    const H_OPS  = 22; // Op/Sp label row
+    const H_PN   = Math.max(...allProcs.map(({ proc }) => {
+      const nameH  = textH(proc.name, COL, 11, 1.35);
+      const ownerH = proc.processOwner ? textH(proc.processOwner, COL, 8, 1.35) + 8 : 0;
+      return nameH + ownerH + 16; // 16 = code label + padding
+    }), 44);
     const H_SUB  = Math.max(...allProcs.map(({ proc }) => {
       const subs = proc.subProcesses || [];
       if (!subs.length) return 30;
@@ -1038,7 +1059,7 @@ function exportToSvg(data) {
       const bg = side === 'op' ? '#2c3e50' : '#445566';
       const px = SB + i * COL;
       rect(px, py, COL, H_OPS, bg);
-      drawText(px, py - 2, COL, side === 'op' ? 'Operating' : 'Supporting', 8, '#fff', false, 'center');
+      drawText(px, py - 2, COL, side === 'op' ? 'Operating' : 'Supporting', 9, '#fff', false, 'center');
     });
     if (fillCols > 0) rect(SB + procCols * COL, py, fillCols * COL, H_OPS, '#888');
     py += H_OPS;
@@ -1051,9 +1072,11 @@ function exportToSvg(data) {
       if (proc.code) els.push('<text x="' + (px + PAD) + '" y="' + (py + PAD + 7) + '" font-size="7" font-family="Arial,sans-serif" fill="rgba(255,255,255,0.7)">' + esc(proc.code) + '</text>');
       drawText(px, py + 6, COL, proc.name, 11, c.text, true, 'left');
       if (proc.processOwner) {
-        const owY = py + H_PN - 14;
-        rect(px, owY, COL, 14, 'rgba(0,0,0,0.15)');
-        els.push('<text x="' + (px + PAD) + '" y="' + (owY + 10) + '" font-size="8" font-family="Arial,sans-serif" fill="rgba(255,255,255,0.9)" font-style="italic">' + esc(proc.processOwner) + '</text>');
+        const owY = py + H_PN - (wrap(proc.processOwner, COL, 8).length * 11) - PAD;
+        els.push('<line x1="' + px + '" y1="' + owY + '" x2="' + (px + COL) + '" y2="' + owY + '" stroke="rgba(255,255,255,0.25)" stroke-width="0.5"/>');
+        wrap(proc.processOwner, COL, 8).forEach((ln, li) => {
+          els.push('<text x="' + (px + PAD) + '" y="' + (owY + 10 + li * 11) + '" font-size="8" font-family="Arial,sans-serif" fill="rgba(255,255,255,0.85)" font-style="italic">' + esc(ln) + '</text>');
+        });
       }
     });
     if (fillCols > 0) rect(SB + procCols * COL, py, fillCols * COL, H_PN, '#888');
@@ -1069,8 +1092,8 @@ function exportToSvg(data) {
         const lns = wrap(s, COL - PAD * 2 - 8, 9);
         lns.forEach((ln, li) => {
           if (sy > py + H_SUB - 8) return;
-          els.push('<text x="' + (px + PAD + (li === 0 ? 0 : 8)) + '" y="' + sy + '" font-size="9" font-family="Arial,sans-serif" fill="#222">' + (li === 0 ? '&#8226; ' : '') + esc(ln) + '</text>');
-          sy += 13;
+          els.push('<text x="' + (px + PAD + (li === 0 ? 0 : 8)) + '" y="' + sy + '" font-size="10" font-family="Arial,sans-serif" fill="#222">' + (li === 0 ? '&#8226; ' : '') + esc(ln) + '</text>');
+          sy += 14;
         });
       });
     });
@@ -1082,7 +1105,7 @@ function exportToSvg(data) {
       const c  = gColor(goalId);
       const px = SB + i * COL;
       rect(px, py, COL, H_PM, c.light);
-      els.push('<text x="' + (px + PAD) + '" y="' + (py + PAD + 8) + '" font-size="6.5" font-family="Arial,sans-serif" fill="#777" font-weight="bold" letter-spacing="0.5">PROCESS MEASURES</text>');
+      els.push('<text x="' + (px + PAD) + '" y="' + (py + PAD + 9) + '" font-size="7.5" font-family="Arial,sans-serif" fill="#777" font-weight="bold" letter-spacing="0.5">PROCESS MEASURES</text>');
       let my = py + PAD + 8 + 12;
       (proc.processMeasures || []).forEach(m => {
         if (my > py + H_PM - 8) return;

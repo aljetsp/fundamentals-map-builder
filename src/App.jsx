@@ -835,7 +835,9 @@ function exportToSvg(data) {
   const outCount  = Math.max(sortedOut.length, 1);
 
   // Dimensions
-  const SB = 44, COL = 200, PAD = 8, F = 14; // F = base font size; COL widened for larger text
+  // Scale factor: 2x so text is proportionally large even when SVG fits a wide screen
+  const SCALE = 2;
+  const SB = 44 * SCALE, COL = 162 * SCALE, PAD = 8 * SCALE, F = 14 * SCALE;
   const W      = SB + totCols * COL;
   const outColW = Math.max(Math.floor((W - SB) / outCount), 120);
   const outW   = SB + outCount * outColW;
@@ -894,24 +896,24 @@ function exportToSvg(data) {
 
   const vLabel = (x, ry, w, h, text) => {
     const cx = x + w / 2, cy = ry + h / 2;
-    els.push('<text x="' + cx + '" y="' + cy + '" font-size="12" font-family="Arial,sans-serif" fill="#fff" text-anchor="middle" dominant-baseline="middle" font-weight="bold" letter-spacing="0.8" transform="rotate(-90,' + cx + ',' + cy + ')">' + esc(text.toUpperCase()) + '</text>');
+    els.push('<text x="' + cx + '" y="' + cy + '" font-size="24.0" font-family="Arial,sans-serif" fill="#fff" text-anchor="middle" dominant-baseline="middle" font-weight="bold" letter-spacing="1.6" transform="rotate(-90,' + cx + ',' + cy + ')">' + esc(text.toUpperCase()) + '</text>');
   };
 
   const els = [];
   let y = 0;
 
   // ── HEADER (Foundations + Key Goals) ────────────────────────────────────
-  const H_ORG  = 50;
+  const H_ORG  = 50 * SCALE;
   // MVV — fixed large font (18px), generous fixed height
-  const MVV_FS = 22;
-  const MVV_LABEL_H = 22;
+  const MVV_FS = 22 * SCALE;
+  const MVV_LABEL_H = 22 * SCALE;
   const H_MVV = Math.max(
     MVV_LABEL_H + textH(data.mission, c1 * hdrColW, MVV_FS, 1.45),
     MVV_LABEL_H + textH(data.vision,  c2 * hdrColW, MVV_FS, 1.45),
     MVV_LABEL_H + textH(data.values,  c3 * hdrColW, MVV_FS, 1.45),
     100
   );
-  const H_GOAL = 100;
+  const H_GOAL = 100 * SCALE;
 
   // Org name row
   rect(0, y, hdrW, H_ORG + H_MVV, '#0d1b2a');
@@ -931,7 +933,7 @@ function exportToSvg(data) {
     const cw = span * hdrColW;
     rect(mx, y, cw, H_MVV, bg);
     // Label
-    els.push('<text x="' + (mx + PAD) + '" y="' + (y + MVV_LABEL_H - 4) + '" font-size="13" font-family="Arial,sans-serif" fill="' + lc + '" font-weight="bold" letter-spacing="0.8">' + label + '</text>');
+    els.push('<text x="' + (mx + PAD) + '" y="' + (y + MVV_LABEL_H - 8) + '" font-size="26.0" font-family="Arial,sans-serif" fill="' + lc + '" font-weight="bold" letter-spacing="1.6">' + label + '</text>');
     // Content text at MVV_FS starting below label
     const lh = MVV_FS * 1.45;
     const lines = wrap(text, cw, MVV_FS);
@@ -959,7 +961,7 @@ function exportToSvg(data) {
   // ── DRAW OUTCOMES ────────────────────────────────────────────────────────
   const drawOutcomes = startY => {
     let oy = startY;
-    const H_OG  = 50;
+    const H_OG  = 50 * SCALE;
     // Compute row heights dynamically
     const H_ON  = Math.max(...sortedOut.map(o => {
       const nameH  = textH(o.name, outColW, 10, 1.4);
@@ -994,23 +996,23 @@ function exportToSvg(data) {
       rect(ox2, oy, outColW, H_ON, c.light);
       let textY = oy + PAD;
       if (o.code) {
-        textY += 8;
-        els.push('<text x="' + (ox2 + outColW / 2) + '" y="' + textY + '" font-size="12" font-family="Arial,sans-serif" fill="#777" text-anchor="middle">' + esc(o.code) + '</text>');
-        textY += 4;
+        textY += 16;
+        els.push('<text x="' + (ox2 + outColW / 2) + '" y="' + textY + '" font-size="24.0" font-family="Arial,sans-serif" fill="#777" text-anchor="middle">' + esc(o.code) + '</text>');
+        textY += 16;
       }
       // Name (bold, center)
       const nameLines = wrap(o.name, outColW, 10);
       nameLines.forEach(ln => {
-        textY += 13;
-        els.push('<text x="' + (ox2 + outColW / 2) + '" y="' + textY + '" font-size="15" font-family="Arial,sans-serif" fill="#222" text-anchor="middle" font-weight="bold">' + esc(ln) + '</text>');
+        textY += 26;
+        els.push('<text x="' + (ox2 + outColW / 2) + '" y="' + textY + '" font-size="30.0" font-family="Arial,sans-serif" fill="#222" text-anchor="middle" font-weight="bold">' + esc(ln) + '</text>');
       });
       // Owner (italic, center, below name)
       if (o.owner) {
-        textY += 6;
+        textY += 12;
         const ownerLines = wrap(o.owner, outColW, 8);
         ownerLines.forEach(ln => {
-          textY += 11;
-          els.push('<text x="' + (ox2 + outColW / 2) + '" y="' + textY + '" font-size="13" font-family="Arial,sans-serif" fill="#555" text-anchor="middle" font-style="italic">' + esc(ln) + '</text>');
+          textY += 22;
+          els.push('<text x="' + (ox2 + outColW / 2) + '" y="' + textY + '" font-size="26.0" font-family="Arial,sans-serif" fill="#555" text-anchor="middle" font-style="italic">' + esc(ln) + '</text>');
         });
       }
     });
@@ -1021,20 +1023,20 @@ function exportToSvg(data) {
       const c = gColor(o.goalId);
       const ox2 = SB + i * outColW;
       rect(ox2, oy, outColW, H_OM, c.light);
-      els.push('<text x="' + (ox2 + PAD) + '" y="' + (oy + PAD + 9) + '" font-size="12" font-family="Arial,sans-serif" fill="#777" font-weight="bold" letter-spacing="0.5">OUTCOME MEASURES</text>');
-      let my = oy + PAD + 8 + 11;
+      els.push('<text x="' + (ox2 + PAD) + '" y="' + (oy + PAD + 9) + '" font-size="24.0" font-family="Arial,sans-serif" fill="#777" font-weight="bold" letter-spacing="1.0">OUTCOME MEASURES</text>');
+      let my = oy + PAD * 2 + 16 * SCALE;
       (o.measures || []).forEach(m => {
         if (my > oy + H_OM - 8) return;
         const label = (m.code ? m.code + '  ' : '') + (m.text || '');
         const lns   = wrap(label, outColW, 8);
         lns.forEach(ln => {
           if (my > oy + H_OM - 8) return;
-          els.push('<text x="' + (ox2 + PAD) + '" y="' + my + '" font-size="12" font-family="Arial,sans-serif" fill="#222">' + esc(ln) + '</text>');
-          my += 11;
+          els.push('<text x="' + (ox2 + PAD) + '" y="' + my + '" font-size="24.0" font-family="Arial,sans-serif" fill="#222">' + esc(ln) + '</text>');
+          my += 22;
         });
         if (m.measureOwner && my <= oy + H_OM - 8) {
-          els.push('<text x="' + (ox2 + PAD + 6) + '" y="' + my + '" font-size="12" font-family="Arial,sans-serif" fill="#555" font-style="italic">' + esc(m.measureOwner) + '</text>');
-          my += 10;
+          els.push('<text x="' + (ox2 + PAD + 6) + '" y="' + my + '" font-size="24.0" font-family="Arial,sans-serif" fill="#555" font-style="italic">' + esc(m.measureOwner) + '</text>');
+          my += 20;
         }
       });
     });
@@ -1046,7 +1048,7 @@ function exportToSvg(data) {
     let py = startY;
 
     // Dynamic row heights: measure tallest cell in each row
-    const H_OPS  = 32; // Op/Sp label row
+    const H_OPS  = 32 * SCALE; // Op/Sp label row
     const H_PN   = Math.max(...allProcs.map(({ proc }) => {
       const nameH  = textH(proc.name, COL, 11, 1.35);
       const ownerH = proc.processOwner ? textH(proc.processOwner, COL, 8, 1.35) + 8 : 0;
@@ -1074,7 +1076,7 @@ function exportToSvg(data) {
       const bg = side === 'op' ? '#2c3e50' : '#445566';
       const px = SB + i * COL;
       rect(px, py, COL, H_OPS, bg);
-      drawText(px, py - 2, COL, side === 'op' ? 'Operating' : 'Supporting', 9, '#fff', false, 'center');
+      drawText(px, py - 4, COL, side === 'op' ? 'Operating' : 'Supporting', 9, '#fff', false, 'center');
     });
     if (fillCols > 0) rect(SB + procCols * COL, py, fillCols * COL, H_OPS, '#888');
     py += H_OPS;
@@ -1084,13 +1086,13 @@ function exportToSvg(data) {
       const c  = gColor(goalId);
       const px = SB + i * COL;
       rect(px, py, COL, H_PN, c.bg);
-      if (proc.code) els.push('<text x="' + (px + PAD) + '" y="' + (py + PAD + 7) + '" font-size="12" font-family="Arial,sans-serif" fill="rgba(255,255,255,0.7)">' + esc(proc.code) + '</text>');
-      drawText(px, py + 6, COL, proc.name, 11, c.text, true, 'left');
+      if (proc.code) els.push('<text x="' + (px + PAD) + '" y="' + (py + PAD + 14) + '" font-size="24.0" font-family="Arial,sans-serif" fill="rgba(255,255,255,0.7)">' + esc(proc.code) + '</text>');
+      drawText(px, py + 12, COL, proc.name, 11, c.text, true, 'left');
       if (proc.processOwner) {
         const owY = py + H_PN - (wrap(proc.processOwner, COL, 8).length * 11) - PAD;
         els.push('<line x1="' + px + '" y1="' + owY + '" x2="' + (px + COL) + '" y2="' + owY + '" stroke="rgba(255,255,255,0.25)" stroke-width="0.5"/>');
         wrap(proc.processOwner, COL, 8).forEach((ln, li) => {
-          els.push('<text x="' + (px + PAD) + '" y="' + (owY + 10 + li * 11) + '" font-size="12" font-family="Arial,sans-serif" fill="rgba(255,255,255,0.85)" font-style="italic">' + esc(ln) + '</text>');
+          els.push('<text x="' + (px + PAD) + '" y="' + (owY + 10 + li * 11) + '" font-size="24.0" font-family="Arial,sans-serif" fill="rgba(255,255,255,0.85)" font-style="italic">' + esc(ln) + '</text>');
         });
       }
     });
@@ -1101,14 +1103,14 @@ function exportToSvg(data) {
     allProcs.forEach(({ proc }, i) => {
       const px = SB + i * COL;
       rect(px, py, COL, H_SUB, '#fff');
-      let sy = py + PAD + 10;
+      let sy = py + PAD + 20;
       (proc.subProcesses || []).forEach(s => {
         if (sy > py + H_SUB - 8) return;
         const lns = wrap(s, COL - PAD * 2 - 8, 9);
         lns.forEach((ln, li) => {
           if (sy > py + H_SUB - 8) return;
-          els.push('<text x="' + (px + PAD + (li === 0 ? 0 : 8)) + '" y="' + sy + '" font-size="14" font-family="Arial,sans-serif" fill="#222">' + (li === 0 ? '&#8226; ' : '') + esc(ln) + '</text>');
-          sy += 14;
+          els.push('<text x="' + (px + PAD + (li === 0 ? 0 : 8)) + '" y="' + sy + '" font-size="28.0" font-family="Arial,sans-serif" fill="#222">' + (li === 0 ? '&#8226; ' : '') + esc(ln) + '</text>');
+          sy += 28;
         });
       });
     });
@@ -1120,20 +1122,20 @@ function exportToSvg(data) {
       const c  = gColor(goalId);
       const px = SB + i * COL;
       rect(px, py, COL, H_PM, c.light);
-      els.push('<text x="' + (px + PAD) + '" y="' + (py + PAD + 9) + '" font-size="12" font-family="Arial,sans-serif" fill="#777" font-weight="bold" letter-spacing="0.5">PROCESS MEASURES</text>');
-      let my = py + PAD + 8 + 12;
+      els.push('<text x="' + (px + PAD) + '" y="' + (py + PAD + 9) + '" font-size="24.0" font-family="Arial,sans-serif" fill="#777" font-weight="bold" letter-spacing="1.0">PROCESS MEASURES</text>');
+      let my = py + PAD * 2 + 16 * SCALE;
       (proc.processMeasures || []).forEach(m => {
         if (my > py + H_PM - 8) return;
         const label = (m.code ? m.code + '  ' : '') + (m.text || '');
         const lns   = wrap(label, COL, 8);
         lns.forEach(ln => {
           if (my > py + H_PM - 8) return;
-          els.push('<text x="' + (px + PAD) + '" y="' + my + '" font-size="12" font-family="Arial,sans-serif" fill="#222">' + esc(ln) + '</text>');
-          my += 11;
+          els.push('<text x="' + (px + PAD) + '" y="' + my + '" font-size="24.0" font-family="Arial,sans-serif" fill="#222">' + esc(ln) + '</text>');
+          my += 22;
         });
         if (m.measureOwner && my <= py + H_PM - 8) {
-          els.push('<text x="' + (px + PAD + 6) + '" y="' + my + '" font-size="12" font-family="Arial,sans-serif" fill="#555" font-style="italic">' + esc(m.measureOwner) + '</text>');
-          my += 11;
+          els.push('<text x="' + (px + PAD + 6) + '" y="' + my + '" font-size="24.0" font-family="Arial,sans-serif" fill="#555" font-style="italic">' + esc(m.measureOwner) + '</text>');
+          my += 22;
         }
       });
     });

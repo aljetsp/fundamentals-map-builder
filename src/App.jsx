@@ -480,7 +480,7 @@ function MapTable({ data, editPath, setEditPath, setData, mapRef }) {
   const B    = '0.5px solid #bbb';
   const cell = (ex = {}) => ({ border: B, padding: '5px 7px', verticalAlign: 'top', fontSize: 10, lineHeight: 1.55, ...ex });
   const hdr  = (bg, fg = '#fff', ex = {}) => ({ border: B, background: bg, color: fg, fontWeight: 500, textAlign: 'center', verticalAlign: 'middle', fontSize: 11, padding: '7px 6px', ...ex });
-  const lbl  = text => <div style={{ fontSize: 8, fontWeight: 700, textTransform: 'uppercase', letterSpacing: 0.6, color: '#777', marginBottom: 2 }}>{text}</div>;
+  const lbl  = text => <div style={{ fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: 0.6, color: '#777', marginBottom: 2 }}>{text}</div>;
 
   const goalColor = gid => { const g = keyGoals.find(g => g.id === gid); return g ? pc(g.colorIdx) : { bg: '#666', text: '#fff', light: '#ddd' }; };
   const opById    = Object.fromEntries(data.operatingProcesses.map(p => [p.id, true]));
@@ -490,7 +490,7 @@ function MapTable({ data, editPath, setEditPath, setData, mapRef }) {
 
   const SbCell = ({ bg, label, rowSpan }) => (
     <td rowSpan={rowSpan} style={{ border: B, background: bg, width: SB, minWidth: SB, maxWidth: SB, padding: 0, verticalAlign: 'middle', textAlign: 'center' }}>
-      <span style={{ writingMode: 'vertical-rl', transform: 'rotate(180deg)', display: 'inline-block', color: '#fff', fontSize: 6.5, fontWeight: 700, textTransform: 'uppercase', letterSpacing: 1.5, whiteSpace: 'nowrap' }}>{label}</span>
+      <span style={{ writingMode: 'vertical-rl', transform: 'rotate(180deg)', display: 'inline-block', color: '#fff', fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: 1, whiteSpace: 'nowrap' }}>{label}</span>
     </td>
   );
 
@@ -528,14 +528,14 @@ function MapTable({ data, editPath, setEditPath, setData, mapRef }) {
           <td colSpan={c2} style={cell({ background: '#1b3d6e', color: '#fff', textAlign: 'center', fontSize: 16, lineHeight: 1.5, padding: '12px 14px' })}>{lbl('Vision')}<EC path={['vision']} value={data.vision} dark {...ecProps} /></td>
           <td colSpan={c3} style={cell({ background: '#1e1e1e', color: '#fff', textAlign: 'center', fontSize: 16, lineHeight: 1.5, padding: '12px 14px' })}>{lbl('Values')}<EC path={['values']} value={data.values} dark {...ecProps} /></td>
         </tr>
-        {/* Row 2: Key Goals — always shown in header, aligned with the section immediately below */}
-        <tr>
+        {/* Row 2: Key Goals — minHeight ensures rotated label fits at 10px font */}
+        <tr style={{ minHeight: 90 }}>
           <SbCell bg="#1b3d6e" label="Key Goals" rowSpan={1} />
           {hdrGoals.length > 0
             ? hdrGoals.map(({ goal, gid, count }, i) => {
                 const color = goal ? pc(goal.colorIdx) : { bg: '#666', text: '#fff' };
                 return (
-                  <td key={(gid ?? 'g') + i} colSpan={count} style={hdr(color.bg, color.text, { fontSize: 14, padding: '9px 8px' })}>
+                  <td key={(gid ?? 'g') + i} colSpan={count} style={hdr(color.bg, color.text, { fontSize: 14, padding: '9px 8px', minHeight: 90, height: 90 })}>
                     {goal ? <EC path={['keyGoals', goal.id, 'name']} value={goal.name} dark {...ecProps} /> : <span style={{ opacity: 0.6, fontStyle: 'italic' }}>Unassigned</span>}
                   </td>
                 );
@@ -581,9 +581,9 @@ function MapTable({ data, editPath, setEditPath, setData, mapRef }) {
             const color = goalColor(o.goalId);
             return (
               <td key={o.id} style={cell({ background: color.light, textAlign: 'center', fontSize: 11 })}>
-                {o.code && <div style={{ fontSize: 7.5, color: '#777', marginBottom: 1 }}>{o.code}</div>}
+                {o.code && <div style={{ fontSize: 10, color: '#777', marginBottom: 1 }}>{o.code}</div>}
                 <div style={{ fontWeight: 500 }}><EC path={['outcomes', o.id, 'name']} value={o.name} {...ecProps} /></div>
-                {o.owner && <div style={{ fontSize: 8.5, fontStyle: 'italic', color: '#555', marginTop: 3, borderTop: '0.5px solid rgba(0,0,0,0.1)', paddingTop: 3 }}><EC path={['outcomes', o.id, 'owner']} value={o.owner} {...ecProps} /></div>}
+                {o.owner && <div style={{ fontSize: 10, fontStyle: 'italic', color: '#555', marginTop: 3, borderTop: '0.5px solid rgba(0,0,0,0.1)', paddingTop: 3 }}><EC path={['outcomes', o.id, 'owner']} value={o.owner} {...ecProps} /></div>}
               </td>
             );
           })}
@@ -592,14 +592,14 @@ function MapTable({ data, editPath, setEditPath, setData, mapRef }) {
           {sortedOut.map(o => {
             const color = goalColor(o.goalId);
             return (
-              <td key={o.id} style={cell({ background: color.light, fontSize: 9.5 })}>
+              <td key={o.id} style={cell({ background: color.light, fontSize: 10 })}>
                 {lbl('Outcome Measures')}
                 {o.measures.length === 0
                   ? <span style={{ opacity: 0.35, fontStyle: 'italic' }}>—</span>
                   : o.measures.map((m, mi) => (
                     <div key={m.id} style={{ marginBottom: mi < o.measures.length - 1 ? 5 : 0 }}>
-                      <div>{m.code && <span style={{ fontWeight: 700, fontSize: 7.5, marginRight: 3 }}>{m.code}</span>}{m.text || <span style={{ opacity: 0.35, fontStyle: 'italic' }}>—</span>}</div>
-                      {m.measureOwner && <div style={{ fontSize: 8.5, fontStyle: 'italic', color: '#555', marginTop: 1 }}>{m.measureOwner}</div>}
+                      <div>{m.code && <span style={{ fontWeight: 700, fontSize: 10, marginRight: 3 }}>{m.code}</span>}{m.text || <span style={{ opacity: 0.35, fontStyle: 'italic' }}>—</span>}</div>
+                      {m.measureOwner && <div style={{ fontSize: 10, fontStyle: 'italic', color: '#555', marginTop: 1 }}>{m.measureOwner}</div>}
                     </div>
                   ))}
               </td>
@@ -639,18 +639,18 @@ function MapTable({ data, editPath, setEditPath, setData, mapRef }) {
           {!outcomesFirst && <SbCell bg="#3a3a3a" label="Core Processes" rowSpan={4} />}
           {groupByType ? (
             <>
-              <td colSpan={opCount} style={hdr(OP_BG, '#fff', { fontSize: 8.5, letterSpacing: 1.1, textTransform: 'uppercase', padding: '5px 6px' })}>Operating Processes</td>
-              <td colSpan={spCount} style={hdr(SP_BG, '#fff', { fontSize: 8.5, letterSpacing: 1.1, textTransform: 'uppercase', padding: '5px 6px' })}>Supporting Processes</td>
+              <td colSpan={opCount} style={hdr(OP_BG, '#fff', { fontSize: 10, letterSpacing: 0.8, textTransform: 'uppercase', padding: '5px 6px' })}>Operating Processes</td>
+              <td colSpan={spCount} style={hdr(SP_BG, '#fff', { fontSize: 10, letterSpacing: 0.8, textTransform: 'uppercase', padding: '5px 6px' })}>Supporting Processes</td>
               {fillerCols > 0 && <td colSpan={fillerCols} style={hdr('#888', '#fff')} />}
             </>
           ) : (
             <>
               {allProcs.map(({ proc, side }) => (
-                <td key={proc.id} style={hdr(side === 'op' ? OP_BG : SP_BG, '#fff', { fontSize: 8, letterSpacing: 1, textTransform: 'uppercase', padding: '4px' })}>
+                <td key={proc.id} style={hdr(side === 'op' ? OP_BG : SP_BG, '#fff', { fontSize: 10, letterSpacing: 0.8, textTransform: 'uppercase', padding: '4px' })}>
                   {side === 'op' ? 'Operating' : 'Supporting'}
                 </td>
               ))}
-              {fillerCols > 0 && <td colSpan={fillerCols} style={hdr('#888', '#fff', { fontSize: 8, padding: '4px' })} />}
+              {fillerCols > 0 && <td colSpan={fillerCols} style={hdr('#888', '#fff', { fontSize: 10, padding: '4px' })} />}
             </>
           )}
         </tr>
@@ -661,10 +661,10 @@ function MapTable({ data, editPath, setEditPath, setData, mapRef }) {
             const type  = procType({ proc });
             return (
               <td key={proc.id} style={hdr(color.bg, color.text, { fontSize: 12, textAlign: 'left', verticalAlign: 'top', padding: '6px 7px' })}>
-                {proc.code && <div style={{ fontSize: 7.5, opacity: 0.7, fontWeight: 400, letterSpacing: 0.3, marginBottom: 1 }}>{proc.code}</div>}
+                {proc.code && <div style={{ fontSize: 10, opacity: 0.7, fontWeight: 400, letterSpacing: 0.3, marginBottom: 1 }}>{proc.code}</div>}
                 <EC path={[type, proc.id, 'name']} value={proc.name} dark {...ecProps} />
                 {proc.processOwner && (
-                  <div style={{ fontSize: 8.5, fontStyle: 'italic', opacity: 0.8, marginTop: 3, borderTop: '0.5px solid rgba(255,255,255,0.25)', paddingTop: 3 }}>
+                  <div style={{ fontSize: 10, fontStyle: 'italic', opacity: 0.8, marginTop: 3, borderTop: '0.5px solid rgba(255,255,255,0.25)', paddingTop: 3 }}>
                     <EC path={[type, proc.id, 'processOwner']} value={proc.processOwner} dark {...ecProps} />
                   </div>
                 )}
@@ -690,14 +690,14 @@ function MapTable({ data, editPath, setEditPath, setData, mapRef }) {
           {allProcs.map(({ proc, goalId }) => {
             const color = goalColor(goalId);
             return (
-              <td key={proc.id} style={cell({ background: color.light, fontSize: 9.5 })}>
+              <td key={proc.id} style={cell({ background: color.light, fontSize: 10 })}>
                 {lbl('Process Measures')}
                 {proc.processMeasures.length === 0
                   ? <span style={{ opacity: 0.35, fontStyle: 'italic' }}>—</span>
                   : proc.processMeasures.map((m, mi) => (
                     <div key={m.id} style={{ marginBottom: mi < proc.processMeasures.length - 1 ? 5 : 0 }}>
-                      <div>{m.code && <span style={{ fontWeight: 700, fontSize: 7.5, marginRight: 3 }}>{m.code}</span>}{m.text || <span style={{ opacity: 0.35, fontStyle: 'italic' }}>—</span>}</div>
-                      {m.measureOwner && <div style={{ fontSize: 8.5, fontStyle: 'italic', color: '#555', marginTop: 1 }}>{m.measureOwner}</div>}
+                      <div>{m.code && <span style={{ fontWeight: 700, fontSize: 10, marginRight: 3 }}>{m.code}</span>}{m.text || <span style={{ opacity: 0.35, fontStyle: 'italic' }}>—</span>}</div>
+                      {m.measureOwner && <div style={{ fontSize: 10, fontStyle: 'italic', color: '#555', marginTop: 1 }}>{m.measureOwner}</div>}
                     </div>
                   ))}
               </td>

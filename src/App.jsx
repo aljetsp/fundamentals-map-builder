@@ -835,7 +835,7 @@ function exportToSvg(data) {
   const outCount  = Math.max(sortedOut.length, 1);
 
   // Dimensions
-  const SB = 44, COL = 162, PAD = 5, F = 11; // F = base font size
+  const SB = 44, COL = 200, PAD = 8, F = 14; // F = base font size; COL widened for larger text
   const W      = SB + totCols * COL;
   const outColW = Math.max(Math.floor((W - SB) / outCount), 120);
   const outW   = SB + outCount * outColW;
@@ -894,24 +894,24 @@ function exportToSvg(data) {
 
   const vLabel = (x, ry, w, h, text) => {
     const cx = x + w / 2, cy = ry + h / 2;
-    els.push('<text x="' + cx + '" y="' + cy + '" font-size="7.5" font-family="Arial,sans-serif" fill="#fff" text-anchor="middle" dominant-baseline="middle" font-weight="bold" letter-spacing="0.8" transform="rotate(-90,' + cx + ',' + cy + ')">' + esc(text.toUpperCase()) + '</text>');
+    els.push('<text x="' + cx + '" y="' + cy + '" font-size="12" font-family="Arial,sans-serif" fill="#fff" text-anchor="middle" dominant-baseline="middle" font-weight="bold" letter-spacing="0.8" transform="rotate(-90,' + cx + ',' + cy + ')">' + esc(text.toUpperCase()) + '</text>');
   };
 
   const els = [];
   let y = 0;
 
   // ── HEADER (Foundations + Key Goals) ────────────────────────────────────
-  const H_ORG  = 38;
+  const H_ORG  = 50;
   // MVV — fixed large font (18px), generous fixed height
-  const MVV_FS = 18;
-  const MVV_LABEL_H = 18;
+  const MVV_FS = 22;
+  const MVV_LABEL_H = 22;
   const H_MVV = Math.max(
     MVV_LABEL_H + textH(data.mission, c1 * hdrColW, MVV_FS, 1.45),
     MVV_LABEL_H + textH(data.vision,  c2 * hdrColW, MVV_FS, 1.45),
     MVV_LABEL_H + textH(data.values,  c3 * hdrColW, MVV_FS, 1.45),
     100
   );
-  const H_GOAL = 80;
+  const H_GOAL = 100;
 
   // Org name row
   rect(0, y, hdrW, H_ORG + H_MVV, '#0d1b2a');
@@ -931,7 +931,7 @@ function exportToSvg(data) {
     const cw = span * hdrColW;
     rect(mx, y, cw, H_MVV, bg);
     // Label
-    els.push('<text x="' + (mx + PAD) + '" y="' + (y + MVV_LABEL_H - 4) + '" font-size="9" font-family="Arial,sans-serif" fill="' + lc + '" font-weight="bold" letter-spacing="0.8">' + label + '</text>');
+    els.push('<text x="' + (mx + PAD) + '" y="' + (y + MVV_LABEL_H - 4) + '" font-size="13" font-family="Arial,sans-serif" fill="' + lc + '" font-weight="bold" letter-spacing="0.8">' + label + '</text>');
     // Content text at MVV_FS starting below label
     const lh = MVV_FS * 1.45;
     const lines = wrap(text, cw, MVV_FS);
@@ -959,7 +959,7 @@ function exportToSvg(data) {
   // ── DRAW OUTCOMES ────────────────────────────────────────────────────────
   const drawOutcomes = startY => {
     let oy = startY;
-    const H_OG  = 38;
+    const H_OG  = 50;
     // Compute row heights dynamically
     const H_ON  = Math.max(...sortedOut.map(o => {
       const nameH  = textH(o.name, outColW, 10, 1.4);
@@ -995,14 +995,14 @@ function exportToSvg(data) {
       let textY = oy + PAD;
       if (o.code) {
         textY += 8;
-        els.push('<text x="' + (ox2 + outColW / 2) + '" y="' + textY + '" font-size="7" font-family="Arial,sans-serif" fill="#777" text-anchor="middle">' + esc(o.code) + '</text>');
+        els.push('<text x="' + (ox2 + outColW / 2) + '" y="' + textY + '" font-size="12" font-family="Arial,sans-serif" fill="#777" text-anchor="middle">' + esc(o.code) + '</text>');
         textY += 4;
       }
       // Name (bold, center)
       const nameLines = wrap(o.name, outColW, 10);
       nameLines.forEach(ln => {
         textY += 13;
-        els.push('<text x="' + (ox2 + outColW / 2) + '" y="' + textY + '" font-size="11" font-family="Arial,sans-serif" fill="#222" text-anchor="middle" font-weight="bold">' + esc(ln) + '</text>');
+        els.push('<text x="' + (ox2 + outColW / 2) + '" y="' + textY + '" font-size="15" font-family="Arial,sans-serif" fill="#222" text-anchor="middle" font-weight="bold">' + esc(ln) + '</text>');
       });
       // Owner (italic, center, below name)
       if (o.owner) {
@@ -1010,7 +1010,7 @@ function exportToSvg(data) {
         const ownerLines = wrap(o.owner, outColW, 8);
         ownerLines.forEach(ln => {
           textY += 11;
-          els.push('<text x="' + (ox2 + outColW / 2) + '" y="' + textY + '" font-size="9" font-family="Arial,sans-serif" fill="#555" text-anchor="middle" font-style="italic">' + esc(ln) + '</text>');
+          els.push('<text x="' + (ox2 + outColW / 2) + '" y="' + textY + '" font-size="13" font-family="Arial,sans-serif" fill="#555" text-anchor="middle" font-style="italic">' + esc(ln) + '</text>');
         });
       }
     });
@@ -1021,7 +1021,7 @@ function exportToSvg(data) {
       const c = gColor(o.goalId);
       const ox2 = SB + i * outColW;
       rect(ox2, oy, outColW, H_OM, c.light);
-      els.push('<text x="' + (ox2 + PAD) + '" y="' + (oy + PAD + 9) + '" font-size="7.5" font-family="Arial,sans-serif" fill="#777" font-weight="bold" letter-spacing="0.5">OUTCOME MEASURES</text>');
+      els.push('<text x="' + (ox2 + PAD) + '" y="' + (oy + PAD + 9) + '" font-size="12" font-family="Arial,sans-serif" fill="#777" font-weight="bold" letter-spacing="0.5">OUTCOME MEASURES</text>');
       let my = oy + PAD + 8 + 11;
       (o.measures || []).forEach(m => {
         if (my > oy + H_OM - 8) return;
@@ -1029,11 +1029,11 @@ function exportToSvg(data) {
         const lns   = wrap(label, outColW, 8);
         lns.forEach(ln => {
           if (my > oy + H_OM - 8) return;
-          els.push('<text x="' + (ox2 + PAD) + '" y="' + my + '" font-size="8" font-family="Arial,sans-serif" fill="#222">' + esc(ln) + '</text>');
+          els.push('<text x="' + (ox2 + PAD) + '" y="' + my + '" font-size="12" font-family="Arial,sans-serif" fill="#222">' + esc(ln) + '</text>');
           my += 11;
         });
         if (m.measureOwner && my <= oy + H_OM - 8) {
-          els.push('<text x="' + (ox2 + PAD + 6) + '" y="' + my + '" font-size="7.5" font-family="Arial,sans-serif" fill="#555" font-style="italic">' + esc(m.measureOwner) + '</text>');
+          els.push('<text x="' + (ox2 + PAD + 6) + '" y="' + my + '" font-size="12" font-family="Arial,sans-serif" fill="#555" font-style="italic">' + esc(m.measureOwner) + '</text>');
           my += 10;
         }
       });
@@ -1046,7 +1046,7 @@ function exportToSvg(data) {
     let py = startY;
 
     // Dynamic row heights: measure tallest cell in each row
-    const H_OPS  = 22; // Op/Sp label row
+    const H_OPS  = 32; // Op/Sp label row
     const H_PN   = Math.max(...allProcs.map(({ proc }) => {
       const nameH  = textH(proc.name, COL, 11, 1.35);
       const ownerH = proc.processOwner ? textH(proc.processOwner, COL, 8, 1.35) + 8 : 0;
@@ -1084,13 +1084,13 @@ function exportToSvg(data) {
       const c  = gColor(goalId);
       const px = SB + i * COL;
       rect(px, py, COL, H_PN, c.bg);
-      if (proc.code) els.push('<text x="' + (px + PAD) + '" y="' + (py + PAD + 7) + '" font-size="7" font-family="Arial,sans-serif" fill="rgba(255,255,255,0.7)">' + esc(proc.code) + '</text>');
+      if (proc.code) els.push('<text x="' + (px + PAD) + '" y="' + (py + PAD + 7) + '" font-size="12" font-family="Arial,sans-serif" fill="rgba(255,255,255,0.7)">' + esc(proc.code) + '</text>');
       drawText(px, py + 6, COL, proc.name, 11, c.text, true, 'left');
       if (proc.processOwner) {
         const owY = py + H_PN - (wrap(proc.processOwner, COL, 8).length * 11) - PAD;
         els.push('<line x1="' + px + '" y1="' + owY + '" x2="' + (px + COL) + '" y2="' + owY + '" stroke="rgba(255,255,255,0.25)" stroke-width="0.5"/>');
         wrap(proc.processOwner, COL, 8).forEach((ln, li) => {
-          els.push('<text x="' + (px + PAD) + '" y="' + (owY + 10 + li * 11) + '" font-size="8" font-family="Arial,sans-serif" fill="rgba(255,255,255,0.85)" font-style="italic">' + esc(ln) + '</text>');
+          els.push('<text x="' + (px + PAD) + '" y="' + (owY + 10 + li * 11) + '" font-size="12" font-family="Arial,sans-serif" fill="rgba(255,255,255,0.85)" font-style="italic">' + esc(ln) + '</text>');
         });
       }
     });
@@ -1107,7 +1107,7 @@ function exportToSvg(data) {
         const lns = wrap(s, COL - PAD * 2 - 8, 9);
         lns.forEach((ln, li) => {
           if (sy > py + H_SUB - 8) return;
-          els.push('<text x="' + (px + PAD + (li === 0 ? 0 : 8)) + '" y="' + sy + '" font-size="10" font-family="Arial,sans-serif" fill="#222">' + (li === 0 ? '&#8226; ' : '') + esc(ln) + '</text>');
+          els.push('<text x="' + (px + PAD + (li === 0 ? 0 : 8)) + '" y="' + sy + '" font-size="14" font-family="Arial,sans-serif" fill="#222">' + (li === 0 ? '&#8226; ' : '') + esc(ln) + '</text>');
           sy += 14;
         });
       });
@@ -1120,7 +1120,7 @@ function exportToSvg(data) {
       const c  = gColor(goalId);
       const px = SB + i * COL;
       rect(px, py, COL, H_PM, c.light);
-      els.push('<text x="' + (px + PAD) + '" y="' + (py + PAD + 9) + '" font-size="7.5" font-family="Arial,sans-serif" fill="#777" font-weight="bold" letter-spacing="0.5">PROCESS MEASURES</text>');
+      els.push('<text x="' + (px + PAD) + '" y="' + (py + PAD + 9) + '" font-size="12" font-family="Arial,sans-serif" fill="#777" font-weight="bold" letter-spacing="0.5">PROCESS MEASURES</text>');
       let my = py + PAD + 8 + 12;
       (proc.processMeasures || []).forEach(m => {
         if (my > py + H_PM - 8) return;
@@ -1128,11 +1128,11 @@ function exportToSvg(data) {
         const lns   = wrap(label, COL, 8);
         lns.forEach(ln => {
           if (my > py + H_PM - 8) return;
-          els.push('<text x="' + (px + PAD) + '" y="' + my + '" font-size="8" font-family="Arial,sans-serif" fill="#222">' + esc(ln) + '</text>');
+          els.push('<text x="' + (px + PAD) + '" y="' + my + '" font-size="12" font-family="Arial,sans-serif" fill="#222">' + esc(ln) + '</text>');
           my += 11;
         });
         if (m.measureOwner && my <= py + H_PM - 8) {
-          els.push('<text x="' + (px + PAD + 6) + '" y="' + my + '" font-size="7.5" font-family="Arial,sans-serif" fill="#555" font-style="italic">' + esc(m.measureOwner) + '</text>');
+          els.push('<text x="' + (px + PAD + 6) + '" y="' + my + '" font-size="12" font-family="Arial,sans-serif" fill="#555" font-style="italic">' + esc(m.measureOwner) + '</text>');
           my += 11;
         }
       });
@@ -1153,7 +1153,7 @@ function exportToSvg(data) {
   const svgW = Math.max(W, outW, hdrW);
   const nl = String.fromCharCode(10);
   // Use viewBox so SVG scales to fit — remove fixed width/height so viewer controls zoom
-  const svgStr = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ' + svgW + ' ' + y + '" style="width:100%;height:auto">' + nl + els.join(nl) + nl + '</svg>';
+  const svgStr = '<svg xmlns="http://www.w3.org/2000/svg" width="' + svgW + '" height="' + y + '" viewBox="0 0 ' + svgW + ' ' + y + '">' + nl + els.join(nl) + nl + '</svg>';
 
   const blob = new Blob([svgStr], { type: 'image/svg+xml' });
   const url = URL.createObjectURL(blob);

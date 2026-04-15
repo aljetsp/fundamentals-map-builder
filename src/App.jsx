@@ -777,394 +777,261 @@ async function exportToPptx(data) {
 // ── SVG Export ────────────────────────────────────────────────────────────────
 function exportToSvg(data) {
   const PAL = [
-    { bg: '#1b3d6e', text: '#fff', light: '#d2e5f5' },
-    { bg: '#1a5c38', text: '#fff', light: '#c4edd6' },
-    { bg: '#6d1f78', text: '#fff', light: '#e8d3f4' },
-    { bg: '#b55000', text: '#fff', light: '#ffddb2' },
-    { bg: '#1a5c5c', text: '#fff', light: '#c4edee' },
-    { bg: '#7a1a2e', text: '#fff', light: '#f5c8d2' },
-    { bg: '#3a5a00', text: '#fff', light: '#d8f0a5' },
-    { bg: '#33337a', text: '#fff', light: '#d0d0f5' },
+    {bg:'#1b3d6e',text:'#fff',light:'#d2e5f5'},{bg:'#1a5c38',text:'#fff',light:'#c4edd6'},
+    {bg:'#6d1f78',text:'#fff',light:'#e8d3f4'},{bg:'#b55000',text:'#fff',light:'#ffddb2'},
+    {bg:'#1a5c5c',text:'#fff',light:'#c4edee'},{bg:'#7a1a2e',text:'#fff',light:'#f5c8d2'},
+    {bg:'#3a5a00',text:'#fff',light:'#d8f0a5'},{bg:'#33337a',text:'#fff',light:'#d0d0f5'},
   ];
-  const pc = idx => PAL[(idx || 0) % PAL.length];
-  const gColor = gid => { const g = data.keyGoals.find(g => g.id === gid); return g ? pc(g.colorIdx) : { bg: '#666', text: '#fff', light: '#ddd' }; };
-  const esc = s => (s || '').toString().replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+  const pc = idx => PAL[(idx||0) % PAL.length];
+  const gColor = gid => { const g = data.keyGoals.find(g=>g.id===gid); return g ? pc(g.colorIdx) : {bg:'#666',text:'#fff',light:'#ddd'}; };
+  const esc = s => (s||'').toString().replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 
-  // Column order — mirrors MapTable
-  const goalOrder = Object.fromEntries(data.keyGoals.map((g, i) => [g.id, i]));
-  const byGoal = (a, b) => (goalOrder[a.goalId] || 999) - (goalOrder[b.goalId] || 999);
-  const groupByType = data.layoutGroupByType || false;
-  const outFirst = data.layoutOutcomesFirst || false;
-
+  // ── Column order
+  const goalOrder = Object.fromEntries(data.keyGoals.map((g,i)=>[g.id,i]));
+  const byGoal = (a,b) => (goalOrder[a.goalId]||999)-(goalOrder[b.goalId]||999);
+  const groupByType = data.layoutGroupByType||false;
+  const outFirst = data.layoutOutcomesFirst||false;
   const spanBuilder = arr => {
-    const spans = []; let i = 0;
-    while (i < arr.length) {
-      const gid = arr[i].goalId || null;
-      const goal = gid ? data.keyGoals.find(g => g.id === gid) : null;
-      let c = 0;
-      while (i < arr.length && (arr[i].goalId || null) === gid) { c++; i++; }
-      spans.push({ goal, gid, count: c });
+    const spans=[]; let i=0;
+    while(i<arr.length){
+      const gid=arr[i].goalId||null; const goal=gid?data.keyGoals.find(g=>g.id===gid):null;
+      let c=0; while(i<arr.length&&(arr[i].goalId||null)===gid){c++;i++;}
+      spans.push({goal,gid,count:c});
     }
     return spans;
   };
-
-  let allProcs = [], goalHdrCells = [], opCount = 0, spCount = 0;
-  if (groupByType) {
-    const sOp = [...data.operatingProcesses].sort(byGoal);
-    const sSp = [...data.supportingProcesses].sort(byGoal);
-    allProcs = [...sOp.map(p => ({ proc: p, side: 'op', goalId: p.goalId })), ...sSp.map(p => ({ proc: p, side: 'sp', goalId: p.goalId }))];
-    opCount = Math.max(sOp.length, 1); spCount = Math.max(sSp.length, 1);
-    goalHdrCells = [...spanBuilder(sOp.map(p => ({ goalId: p.goalId }))), ...spanBuilder(sSp.map(p => ({ goalId: p.goalId })))];
+  let allProcs=[],goalHdrCells=[],opCount=0,spCount=0;
+  if(groupByType){
+    const sOp=[...data.operatingProcesses].sort(byGoal);
+    const sSp=[...data.supportingProcesses].sort(byGoal);
+    allProcs=[...sOp.map(p=>({proc:p,side:'op',goalId:p.goalId})),...sSp.map(p=>({proc:p,side:'sp',goalId:p.goalId}))];
+    opCount=Math.max(sOp.length,1); spCount=Math.max(sSp.length,1);
+    goalHdrCells=[...spanBuilder(sOp.map(p=>({goalId:p.goalId}))),...spanBuilder(sSp.map(p=>({goalId:p.goalId})))];
   } else {
-    const seen = new Set();
-    for (const g of data.keyGoals) {
-      for (const p of data.operatingProcesses)  if (p.goalId === g.id) { allProcs.push({ proc: p, side: 'op', goalId: g.id }); seen.add(p.id); }
-      for (const p of data.supportingProcesses) if (p.goalId === g.id) { allProcs.push({ proc: p, side: 'sp', goalId: g.id }); seen.add(p.id); }
+    const seen=new Set();
+    for(const g of data.keyGoals){
+      for(const p of data.operatingProcesses) if(p.goalId===g.id){allProcs.push({proc:p,side:'op',goalId:g.id});seen.add(p.id);}
+      for(const p of data.supportingProcesses) if(p.goalId===g.id){allProcs.push({proc:p,side:'sp',goalId:g.id});seen.add(p.id);}
     }
-    for (const p of data.operatingProcesses)  if (!seen.has(p.id)) { allProcs.push({ proc: p, side: 'op', goalId: null }); seen.add(p.id); }
-    for (const p of data.supportingProcesses) if (!seen.has(p.id)) { allProcs.push({ proc: p, side: 'sp', goalId: null }); seen.add(p.id); }
-    goalHdrCells = spanBuilder(allProcs.map(x => ({ goalId: x.goalId })));
+    for(const p of data.operatingProcesses)  if(!seen.has(p.id)){allProcs.push({proc:p,side:'op',goalId:null});seen.add(p.id);}
+    for(const p of data.supportingProcesses) if(!seen.has(p.id)){allProcs.push({proc:p,side:'sp',goalId:null});seen.add(p.id);}
+    goalHdrCells=spanBuilder(allProcs.map(x=>({goalId:x.goalId})));
   }
+  const sortedOut=[...data.outcomes].sort((a,b)=>(goalOrder[a.goalId]||999)-(goalOrder[b.goalId]||999));
+  const outSpans=spanBuilder(sortedOut.map(o=>({goalId:o.goalId})));
 
-  const sortedOut = [...data.outcomes].sort((a, b) => (goalOrder[a.goalId] || 999) - (goalOrder[b.goalId] || 999));
-  const outSpans  = spanBuilder(sortedOut.map(o => ({ goalId: o.goalId })));
+  // ── Layout constants — kept proportional so text is readable at typical zoom
+  const SB=32, COL=180, PAD=6;
+  const procCols=allProcs.length, totCols=Math.max(procCols,3), fillCols=totCols-procCols;
+  const outCount=Math.max(sortedOut.length,1);
+  const W=SB+totCols*COL;
+  const outColW=Math.max(Math.floor((W-SB)/outCount),130);
+  const outW=SB+outCount*outColW;
+  const hdrAlignOut=outFirst&&sortedOut.length>0;
+  const hdrCols=hdrAlignOut?Math.max(outCount,3):totCols;
+  const hdrColW=hdrAlignOut?outColW:COL;
+  const hdrW=SB+hdrCols*hdrColW;
+  const hdrFill=hdrCols-(hdrAlignOut?outCount:procCols);
+  const hdrGoals=hdrAlignOut?outSpans:goalHdrCells;
+  const c1=Math.ceil(hdrCols/3),c2=Math.ceil((hdrCols-c1)/2),c3=hdrCols-c1-c2;
 
-  const procCols  = allProcs.length;
-  const totCols   = Math.max(procCols, 3);
-  const fillCols  = totCols - procCols;
-  const outCount  = Math.max(sortedOut.length, 1);
-
-  // Dimensions
-  // Scale factor: 2x so text is proportionally large even when SVG fits a wide screen
-  const SCALE = 2;
-  const SB = 44 * SCALE, COL = 162 * SCALE, PAD = 8 * SCALE, F = 14 * SCALE;
-  const W      = SB + totCols * COL;
-  const outColW = Math.max(Math.floor((W - SB) / outCount), 120);
-  const outW   = SB + outCount * outColW;
-
-  const hdrAlignOut = outFirst && sortedOut.length > 0;
-  const hdrCols  = hdrAlignOut ? Math.max(outCount, 3) : totCols;
-  const hdrColW  = hdrAlignOut ? outColW : COL;
-  const hdrW     = SB + hdrCols * hdrColW;
-  const hdrFill  = hdrCols - (hdrAlignOut ? outCount : procCols);
-  const hdrGoals = hdrAlignOut ? outSpans : goalHdrCells;
-  const c1 = Math.ceil(hdrCols / 3), c2 = Math.ceil((hdrCols - c1) / 2), c3 = hdrCols - c1 - c2;
-
-  // Text wrapping — handles literal newlines in data by splitting on both \n and spaces
+  // ── Text helpers
   const wrap = (text, maxW, fs) => {
-    if (!text) return [];
-    const charW = fs * 0.52;
-    const maxC  = Math.max(1, Math.floor((maxW - PAD * 2) / charW));
-    // First split on literal newlines to get paragraphs, then wrap each
-    const paragraphs = (text + '').replace(/\r/g, '').split('\n');
-    const lines = [];
-    for (const para of paragraphs) {
-      if (!para.trim()) { lines.push(''); continue; }
-      const words = para.split(' ');
-      let line = '';
-      for (const w of words) {
-        const t = line ? line + ' ' + w : w;
-        if (t.length > maxC && line) { lines.push(line); line = w; }
-        else line = t;
+    if(!text) return [];
+    const charW=fs*0.52, maxC=Math.max(1,Math.floor((maxW-PAD*2)/charW));
+    const lines=[]; 
+    for(const para of (text+'').replace(/\r/g,'').split('\n')){
+      if(!para.trim()){lines.push('');continue;}
+      const words=para.split(' '); let line='';
+      for(const w of words){
+        const t=line?line+' '+w:w;
+        if(t.length>maxC&&line){lines.push(line);line=w;} else line=t;
       }
-      if (line) lines.push(line);
+      if(line) lines.push(line);
     }
     return lines;
   };
+  const textH = (text,colW,fs,lh) => Math.max(wrap(text,colW,fs).length,1)*fs*(lh||1.45)+PAD*2;
 
-  // Compute height needed to fit wrapped text
-  const textH = (text, colW, fs, lineH) => {
-    const lines = wrap(text, colW, fs);
-    return Math.max(lines.length, 1) * fs * (lineH || 1.45) + PAD * 2;
+  const els=[];
+  let y=0;
+  const F=11; // base font for process/outcome content
+
+  const rect=(x,ry,w,h,fill)=>els.push('<rect x="'+x+'" y="'+ry+'" width="'+w+'" height="'+h+'" fill="'+fill+'" stroke="#bbb" stroke-width="0.5"/>');
+  const txt=(x,ry,fs,color,anchor,bold,italic,ls,content)=>els.push('<text x="'+x+'" y="'+ry+'" font-size="'+fs+'" font-family="Arial,sans-serif" fill="'+color+'" text-anchor="'+(anchor||'start')+'"'+(bold?' font-weight="bold"':'')+(italic?' font-style="italic"':'')+(ls?' letter-spacing="'+ls+'"':'')+'>'+esc(content)+'</text>');
+  const drawLines=(x,ry,colW,text,fs,color,align,lh)=>{
+    if(!text) return;
+    const lines=wrap(text,colW,fs), lineH=(lh||1.45)*fs;
+    const ax=align==='center'?x+colW/2:x+PAD;
+    const anch=align==='center'?'middle':'start';
+    lines.forEach((ln,i)=>txt(ax,ry+PAD+fs+i*lineH,fs,color,anch,false,false,null,ln));
+  };
+  const vLabel=(x,ry,w,h,text)=>{
+    const cx=x+w/2,cy=ry+h/2;
+    els.push('<text x="'+cx+'" y="'+cy+'" font-size="10" font-family="Arial,sans-serif" fill="#fff" text-anchor="middle" dominant-baseline="middle" font-weight="bold" letter-spacing="0.8" transform="rotate(-90,'+cx+','+cy+')">'+esc(text.toUpperCase())+'</text>');
   };
 
-  // Draw text lines into SVG
-  const drawText = (x, ry, colW, text, fs, color, bold, align, lineH) => {
-    if (!text) return;
-    const lh   = (lineH || 1.45) * fs;
-    const lines = wrap(text, colW, fs);
-    const anch  = align === 'center' ? 'middle' : 'start';
-    const tx    = align === 'center' ? x + colW / 2 : x + PAD;
-    lines.forEach((ln, i) => {
-      els.push('<text x="' + tx + '" y="' + (ry + PAD + fs + i * lh) + '" font-size="' + fs + '" font-family="Arial,sans-serif" fill="' + color + '" text-anchor="' + anch + '"' + (bold ? ' font-weight="bold"' : '') + '>' + esc(ln) + '</text>');
-    });
-  };
+  // ── HEADER
+  const H_ORG=40;
+  const MVV_FS=15;
+  const H_MVV=Math.max(textH(data.mission,c1*hdrColW,MVV_FS,1.4),textH(data.vision,c2*hdrColW,MVV_FS,1.4),textH(data.values,c3*hdrColW,MVV_FS,1.4),80)+8;
+  const H_GOAL=80;
 
-  const rect = (x, ry, w, h, fill) => {
-    els.push('<rect x="' + x + '" y="' + ry + '" width="' + w + '" height="' + h + '" fill="' + fill + '" stroke="#bbb" stroke-width="0.5"/>');
-  };
+  rect(0,y,SB,H_ORG+H_MVV,'#0d1b2a');
+  vLabel(0,y,SB,H_ORG+H_MVV,'Foundations');
+  rect(SB,y,hdrW-SB,H_ORG,'#0d1b2a');
+  drawLines(SB,y,hdrW-SB,data.orgName||'',16,'#fff','left');
+  y+=H_ORG;
 
-  const vLabel = (x, ry, w, h, text) => {
-    const cx = x + w / 2, cy = ry + h / 2;
-    els.push('<text x="' + cx + '" y="' + cy + '" font-size="24.0" font-family="Arial,sans-serif" fill="#fff" text-anchor="middle" dominant-baseline="middle" font-weight="bold" letter-spacing="1.6" transform="rotate(-90,' + cx + ',' + cy + ')">' + esc(text.toUpperCase()) + '</text>');
-  };
-
-  const els = [];
-  let y = 0;
-
-  // ── HEADER (Foundations + Key Goals) ────────────────────────────────────
-  const H_ORG  = 50 * SCALE;
-  // MVV — fixed large font (18px), generous fixed height
-  const MVV_FS = 22 * SCALE;
-  const MVV_LABEL_H = 22 * SCALE;
-  const H_MVV = Math.max(
-    MVV_LABEL_H + textH(data.mission, c1 * hdrColW, MVV_FS, 1.45),
-    MVV_LABEL_H + textH(data.vision,  c2 * hdrColW, MVV_FS, 1.45),
-    MVV_LABEL_H + textH(data.values,  c3 * hdrColW, MVV_FS, 1.45),
-    100
-  );
-  const H_GOAL = 100 * SCALE;
-
-  // Org name row
-  rect(0, y, hdrW, H_ORG + H_MVV, '#0d1b2a');
-  vLabel(0, y, SB, H_ORG + H_MVV, 'Foundations');
-  rect(SB, y, hdrW - SB, H_ORG, '#0d1b2a');
-  drawText(SB + PAD, y, hdrW - SB - PAD, data.orgName || '', 20, '#fff', true, 'left');
-  y += H_ORG;
-
-  // MVV row — 18px bold text, height sized to fit content
-  const mvvCells = [
-    { span: c1, bg: '#e8f0fb', text: data.mission, color: '#111', label: 'MISSION', lc: '#1b3d6e' },
-    { span: c2, bg: '#1b3d6e', text: data.vision,  color: '#fff', label: 'VISION',  lc: '#ccc' },
-    { span: c3, bg: '#1e1e1e', text: data.values,  color: '#fff', label: 'VALUES',  lc: '#ccc' },
+  const mvvCells=[
+    {span:c1,bg:'#e8f0fb',text:data.mission,color:'#111',label:'MISSION',lc:'#1b3d6e'},
+    {span:c2,bg:'#1b3d6e',text:data.vision, color:'#fff',label:'VISION', lc:'#ccc'},
+    {span:c3,bg:'#1e1e1e',text:data.values, color:'#fff',label:'VALUES', lc:'#ccc'},
   ];
-  let mx = SB;
-  mvvCells.forEach(({ span, bg, text, color, label, lc }) => {
-    const cw = span * hdrColW;
-    rect(mx, y, cw, H_MVV, bg);
-    // Label
-    els.push('<text x="' + (mx + PAD) + '" y="' + (y + MVV_LABEL_H - 8) + '" font-size="26.0" font-family="Arial,sans-serif" fill="' + lc + '" font-weight="bold" letter-spacing="1.6">' + label + '</text>');
-    // Content text at MVV_FS starting below label
-    const lh = MVV_FS * 1.45;
-    const lines = wrap(text, cw, MVV_FS);
-    lines.forEach((ln, i) => {
-      els.push('<text x="' + (mx + PAD) + '" y="' + (y + MVV_LABEL_H + MVV_FS + i * lh) + '" font-size="' + MVV_FS + '" font-family="Arial,sans-serif" fill="' + color + '">' + esc(ln) + '</text>');
-    });
-    mx += cw;
+  let mx=SB;
+  mvvCells.forEach(({span,bg,text,color,label,lc})=>{
+    const cw=span*hdrColW;
+    rect(mx,y,cw,H_MVV,bg);
+    txt(mx+PAD,y+16,10,lc,'start',true,false,'0.6',label);
+    const lh=MVV_FS*1.4;
+    wrap(text,cw,MVV_FS).forEach((ln,i)=>txt(mx+PAD,y+20+MVV_FS+i*lh,MVV_FS,color,'start',false,false,null,ln));
+    mx+=cw;
   });
-  y += H_MVV;
+  y+=H_MVV;
 
-  // Key Goals row
-  rect(0, y, SB, H_GOAL, '#1b3d6e');
-  vLabel(0, y, SB, H_GOAL, 'Key Goals');
-  let gx = SB;
-  hdrGoals.forEach(({ goal, count }) => {
-    const cw = count * hdrColW;
-    const c  = goal ? pc(goal.colorIdx) : { bg: '#666', text: '#fff' };
-    rect(gx, y, cw, H_GOAL, c.bg);
-    drawText(gx, y, cw, goal ? goal.name : 'Unassigned', 13, c.text, true, 'center');
-    gx += cw;
+  rect(0,y,SB,H_GOAL,'#1b3d6e');
+  vLabel(0,y,SB,H_GOAL,'Key Goals');
+  let gx=SB;
+  hdrGoals.forEach(({goal,count})=>{
+    const cw=count*hdrColW, c=goal?pc(goal.colorIdx):{bg:'#666',text:'#fff'};
+    rect(gx,y,cw,H_GOAL,c.bg);
+    drawLines(gx,y,cw,goal?goal.name:'Unassigned',13,c.text,'center');
+    gx+=cw;
   });
-  if (hdrFill > 0) rect(gx, y, hdrFill * hdrColW, H_GOAL, '#888');
-  y += H_GOAL;
+  if(hdrFill>0) rect(gx,y,hdrFill*hdrColW,H_GOAL,'#888');
+  y+=H_GOAL;
 
-  // ── DRAW OUTCOMES ────────────────────────────────────────────────────────
-  const drawOutcomes = startY => {
-    let oy = startY;
-    const H_OG  = 50 * SCALE;
-    // Compute row heights dynamically
-    const H_ON  = Math.max(...sortedOut.map(o => {
-      const nameH  = textH(o.name, outColW, 10, 1.4);
-      const ownerH = o.owner ? textH(o.owner, outColW, 8, 1.35) + 4 : 0;
-      return nameH + ownerH + PAD * 2 + 8; // extra top padding for code label
-    }), 50);
-    const H_OM  = Math.max(...sortedOut.map(o => {
-      if (!o.measures || !o.measures.length) return 30;
-      return o.measures.reduce((acc, m) => acc + textH((m.code ? m.code + '  ' : '') + (m.text || ''), outColW, 8, 1.35) + (m.measureOwner ? 12 : 0), PAD * 2 + 14);
-    }), 44);
-    const outH = H_OG + H_ON + H_OM;
-
-    // Sidebar
-    rect(0, oy, SB, outH, '#555');
-    vLabel(0, oy, SB, outH, 'Outcomes');
-
-    // Goal spans
-    let ox = SB;
-    outSpans.forEach(({ goal, count }) => {
-      const cw = count * outColW;
-      const c  = goal ? pc(goal.colorIdx) : { bg: '#666', text: '#fff' };
-      rect(ox, oy, cw, H_OG, c.bg);
-      drawText(ox, oy, cw, goal ? goal.name : 'Unassigned', 12, c.text, true, 'center');
-      ox += cw;
+  // ── DRAW OUTCOMES
+  const drawOutcomes=startY=>{
+    let oy=startY;
+    const H_OG=70;
+    const H_ON=Math.max(...sortedOut.map(o=>{
+      const nh=textH(o.name,outColW,F+1,1.4); const oh=o.owner?textH(o.owner,outColW,F-1,1.35)+4:0;
+      return nh+oh+PAD*2+10;
+    }),50);
+    const H_OM=Math.max(...sortedOut.map(o=>{
+      if(!o.measures||!o.measures.length) return 30;
+      return o.measures.reduce((a,m)=>a+textH((m.code?m.code+'  ':'')+( m.text||''),outColW,F,1.35)+(m.measureOwner?F+4:0),PAD*2+16);
+    }),50);
+    const outH=H_OG+H_ON+H_OM;
+    rect(0,oy,SB,outH,'#555'); vLabel(0,oy,SB,outH,'Outcomes');
+    let ox=SB;
+    outSpans.forEach(({goal,count})=>{
+      const cw=count*outColW, c=goal?pc(goal.colorIdx):{bg:'#666',text:'#fff'};
+      rect(ox,oy,cw,H_OG,c.bg); drawLines(ox,oy,cw,goal?goal.name:'Unassigned',12,c.text,'center'); ox+=cw;
     });
-    oy += H_OG;
-
-    // Outcome names + owners — stacked: code -> name lines -> owner lines
-    sortedOut.forEach((o, i) => {
-      const c = gColor(o.goalId);
-      const ox2 = SB + i * outColW;
-      rect(ox2, oy, outColW, H_ON, c.light);
-      let textY = oy + PAD;
-      if (o.code) {
-        textY += 16;
-        els.push('<text x="' + (ox2 + outColW / 2) + '" y="' + textY + '" font-size="24.0" font-family="Arial,sans-serif" fill="#777" text-anchor="middle">' + esc(o.code) + '</text>');
-        textY += 16;
-      }
-      // Name (bold, center)
-      const nameLines = wrap(o.name, outColW, 10);
-      nameLines.forEach(ln => {
-        textY += 26;
-        els.push('<text x="' + (ox2 + outColW / 2) + '" y="' + textY + '" font-size="30.0" font-family="Arial,sans-serif" fill="#222" text-anchor="middle" font-weight="bold">' + esc(ln) + '</text>');
-      });
-      // Owner (italic, center, below name)
-      if (o.owner) {
-        textY += 12;
-        const ownerLines = wrap(o.owner, outColW, 8);
-        ownerLines.forEach(ln => {
-          textY += 22;
-          els.push('<text x="' + (ox2 + outColW / 2) + '" y="' + textY + '" font-size="26.0" font-family="Arial,sans-serif" fill="#555" text-anchor="middle" font-style="italic">' + esc(ln) + '</text>');
-        });
-      }
+    oy+=H_OG;
+    sortedOut.forEach((o,i)=>{
+      const c=gColor(o.goalId), ox2=SB+i*outColW;
+      rect(ox2,oy,outColW,H_ON,c.light);
+      let ty=oy+PAD;
+      if(o.code){ty+=10;txt(ox2+outColW/2,ty,10,'#777','middle',false,false,null,o.code);}
+      const nameLines=wrap(o.name,outColW,F+1);
+      nameLines.forEach(ln=>{ty+=F+3;txt(ox2+outColW/2,ty,F+1,'#222','middle',true,false,null,ln);});
+      if(o.owner){ty+=6;wrap(o.owner,outColW,F-1).forEach(ln=>{ty+=F+2;txt(ox2+outColW/2,ty,F-1,'#555','middle',false,true,null,ln);});}
     });
-    oy += H_ON;
-
-    // Outcome measures
-    sortedOut.forEach((o, i) => {
-      const c = gColor(o.goalId);
-      const ox2 = SB + i * outColW;
-      rect(ox2, oy, outColW, H_OM, c.light);
-      els.push('<text x="' + (ox2 + PAD) + '" y="' + (oy + PAD + 9) + '" font-size="24.0" font-family="Arial,sans-serif" fill="#777" font-weight="bold" letter-spacing="1.0">OUTCOME MEASURES</text>');
-      let my = oy + PAD * 2 + 16 * SCALE;
-      (o.measures || []).forEach(m => {
-        if (my > oy + H_OM - 8) return;
-        const label = (m.code ? m.code + '  ' : '') + (m.text || '');
-        const lns   = wrap(label, outColW, 8);
-        lns.forEach(ln => {
-          if (my > oy + H_OM - 8) return;
-          els.push('<text x="' + (ox2 + PAD) + '" y="' + my + '" font-size="24.0" font-family="Arial,sans-serif" fill="#222">' + esc(ln) + '</text>');
-          my += 22;
-        });
-        if (m.measureOwner && my <= oy + H_OM - 8) {
-          els.push('<text x="' + (ox2 + PAD + 6) + '" y="' + my + '" font-size="24.0" font-family="Arial,sans-serif" fill="#555" font-style="italic">' + esc(m.measureOwner) + '</text>');
-          my += 20;
-        }
+    oy+=H_ON;
+    sortedOut.forEach((o,i)=>{
+      const c=gColor(o.goalId), ox2=SB+i*outColW;
+      rect(ox2,oy,outColW,H_OM,c.light);
+      txt(ox2+PAD,oy+PAD+10,10,'#777','start',true,false,'0.5','OUTCOME MEASURES');
+      let my=oy+PAD+9+12;
+      (o.measures||[]).forEach(m=>{
+        if(my>oy+H_OM-8) return;
+        wrap((m.code?m.code+'  ':'')+( m.text||''),outColW,F).forEach(ln=>{if(my<=oy+H_OM-8){txt(ox2+PAD,my,F,'#222','start',false,false,null,ln);my+=F+3;}});
+        if(m.measureOwner&&my<=oy+H_OM-8){txt(ox2+PAD+4,my,F-1,'#555','start',false,true,null,m.measureOwner);my+=F+3;}
       });
     });
-    return oy + H_OM;
+    return oy+H_OM;
   };
 
-  // ── DRAW PROCESSES ───────────────────────────────────────────────────────
-  const drawProcesses = startY => {
-    let py = startY;
-
-    // Dynamic row heights: measure tallest cell in each row
-    const H_OPS  = 32 * SCALE; // Op/Sp label row
-    const H_PN   = Math.max(...allProcs.map(({ proc }) => {
-      const nameH  = textH(proc.name, COL, 11, 1.35);
-      const ownerH = proc.processOwner ? textH(proc.processOwner, COL, 8, 1.35) + 8 : 0;
-      return nameH + ownerH + 16; // 16 = code label + padding
-    }), 44);
-    const H_SUB  = Math.max(...allProcs.map(({ proc }) => {
-      const subs = proc.subProcesses || [];
-      if (!subs.length) return 30;
-      return subs.reduce((acc, s) => acc + textH(s, COL, 9, 1.35), PAD * 2);
-    }), 60);
-    const H_PM   = Math.max(...allProcs.map(({ proc }) => {
-      const ms = proc.processMeasures || [];
-      if (!ms.length) return 30;
-      return ms.reduce((acc, m) => acc + textH((m.code ? m.code + '  ' : '') + (m.text || ''), COL, 8, 1.35) + (m.measureOwner ? 12 : 0), PAD * 2 + 16);
-    }), 44);
-
-    const procH = H_OPS + H_PN + H_SUB + H_PM;
-
-    // Sidebar
-    rect(0, py, SB, procH, '#3a3a3a');
-    vLabel(0, py, SB, procH, 'Core Processes');
-
-    // Op/Sp label row
-    allProcs.forEach(({ proc, side }, i) => {
-      const bg = side === 'op' ? '#2c3e50' : '#445566';
-      const px = SB + i * COL;
-      rect(px, py, COL, H_OPS, bg);
-      drawText(px, py - 4, COL, side === 'op' ? 'Operating' : 'Supporting', 9, '#fff', false, 'center');
+  // ── DRAW PROCESSES
+  const drawProcesses=startY=>{
+    let py=startY;
+    const H_OPS=28;
+    const H_PN=Math.max(...allProcs.map(({proc})=>{
+      const nh=textH(proc.name,COL,F+2,1.35); const oh=proc.processOwner?textH(proc.processOwner,COL,F-1,1.35)+6:0;
+      return nh+oh+18;
+    }),50);
+    const H_SUB=Math.max(...allProcs.map(({proc})=>{
+      const subs=proc.subProcesses||[]; if(!subs.length) return 30;
+      return subs.reduce((a,s)=>a+textH(s,COL,F,1.35),PAD*2);
+    }),60);
+    const H_PM=Math.max(...allProcs.map(({proc})=>{
+      const ms=proc.processMeasures||[]; if(!ms.length) return 30;
+      return ms.reduce((a,m)=>a+textH((m.code?m.code+'  ':'')+( m.text||''),COL,F,1.35)+(m.measureOwner?F+2:0),PAD*2+16);
+    }),50);
+    const procH=H_OPS+H_PN+H_SUB+H_PM;
+    rect(0,py,SB,procH,'#3a3a3a'); vLabel(0,py,SB,procH,'Core Processes');
+    allProcs.forEach(({proc,side},i)=>{
+      const bg=side==='op'?'#2c3e50':'#445566', px=SB+i*COL;
+      rect(px,py,COL,H_OPS,bg); drawLines(px,py,COL,side==='op'?'Operating':'Supporting',10,'#fff','center');
     });
-    if (fillCols > 0) rect(SB + procCols * COL, py, fillCols * COL, H_OPS, '#888');
-    py += H_OPS;
-
-    // Process name + owner
-    allProcs.forEach(({ proc, goalId }, i) => {
-      const c  = gColor(goalId);
-      const px = SB + i * COL;
-      rect(px, py, COL, H_PN, c.bg);
-      if (proc.code) els.push('<text x="' + (px + PAD) + '" y="' + (py + PAD + 14) + '" font-size="24.0" font-family="Arial,sans-serif" fill="rgba(255,255,255,0.7)">' + esc(proc.code) + '</text>');
-      drawText(px, py + 12, COL, proc.name, 11, c.text, true, 'left');
-      if (proc.processOwner) {
-        const owY = py + H_PN - (wrap(proc.processOwner, COL, 8).length * 11) - PAD;
-        els.push('<line x1="' + px + '" y1="' + owY + '" x2="' + (px + COL) + '" y2="' + owY + '" stroke="rgba(255,255,255,0.25)" stroke-width="0.5"/>');
-        wrap(proc.processOwner, COL, 8).forEach((ln, li) => {
-          els.push('<text x="' + (px + PAD) + '" y="' + (owY + 10 + li * 11) + '" font-size="24.0" font-family="Arial,sans-serif" fill="rgba(255,255,255,0.85)" font-style="italic">' + esc(ln) + '</text>');
-        });
+    if(fillCols>0) rect(SB+procCols*COL,py,fillCols*COL,H_OPS,'#888');
+    py+=H_OPS;
+    allProcs.forEach(({proc,goalId},i)=>{
+      const c=gColor(goalId), px=SB+i*COL;
+      rect(px,py,COL,H_PN,c.bg);
+      if(proc.code) txt(px+PAD,py+PAD+10,10,c.text+'88','start',false,false,'0.3',proc.code);
+      let ty=py+(proc.code?PAD+12:PAD);
+      wrap(proc.name,COL,F+2).forEach(ln=>{ty+=F+4;txt(px+PAD,ty,F+2,c.text,'start',true,false,null,ln);});
+      if(proc.processOwner){
+        ty+=4;
+        wrap(proc.processOwner,COL,F-1).forEach(ln=>{ty+=F+3;txt(px+PAD,ty,F-1,c.text,'start',false,true,null,ln);});
       }
     });
-    if (fillCols > 0) rect(SB + procCols * COL, py, fillCols * COL, H_PN, '#888');
-    py += H_PN;
-
-    // Sub-processes
-    allProcs.forEach(({ proc }, i) => {
-      const px = SB + i * COL;
-      rect(px, py, COL, H_SUB, '#fff');
-      let sy = py + PAD + 20;
-      (proc.subProcesses || []).forEach(s => {
-        if (sy > py + H_SUB - 8) return;
-        const lns = wrap(s, COL - PAD * 2 - 8, 9);
-        lns.forEach((ln, li) => {
-          if (sy > py + H_SUB - 8) return;
-          els.push('<text x="' + (px + PAD + (li === 0 ? 0 : 8)) + '" y="' + sy + '" font-size="28.0" font-family="Arial,sans-serif" fill="#222">' + (li === 0 ? '&#8226; ' : '') + esc(ln) + '</text>');
-          sy += 28;
+    if(fillCols>0) rect(SB+procCols*COL,py,fillCols*COL,H_PN,'#888');
+    py+=H_PN;
+    allProcs.forEach(({proc},i)=>{
+      const px=SB+i*COL; rect(px,py,COL,H_SUB,'#fff');
+      let sy=py+PAD+F;
+      (proc.subProcesses||[]).forEach(s=>{
+        wrap(s,COL,F).forEach((ln,li)=>{
+          if(sy>py+H_SUB-8) return;
+          txt(px+PAD+(li===0?0:6),sy,F,'#222','start',false,false,null,(li===0?'- ':'')+ln); sy+=F+3;
         });
       });
     });
-    if (fillCols > 0) rect(SB + procCols * COL, py, fillCols * COL, H_SUB, '#f5f5f5');
-    py += H_SUB;
-
-    // Process measures
-    allProcs.forEach(({ proc, goalId }, i) => {
-      const c  = gColor(goalId);
-      const px = SB + i * COL;
-      rect(px, py, COL, H_PM, c.light);
-      els.push('<text x="' + (px + PAD) + '" y="' + (py + PAD + 9) + '" font-size="24.0" font-family="Arial,sans-serif" fill="#777" font-weight="bold" letter-spacing="1.0">PROCESS MEASURES</text>');
-      let my = py + PAD * 2 + 16 * SCALE;
-      (proc.processMeasures || []).forEach(m => {
-        if (my > py + H_PM - 8) return;
-        const label = (m.code ? m.code + '  ' : '') + (m.text || '');
-        const lns   = wrap(label, COL, 8);
-        lns.forEach(ln => {
-          if (my > py + H_PM - 8) return;
-          els.push('<text x="' + (px + PAD) + '" y="' + my + '" font-size="24.0" font-family="Arial,sans-serif" fill="#222">' + esc(ln) + '</text>');
-          my += 22;
-        });
-        if (m.measureOwner && my <= py + H_PM - 8) {
-          els.push('<text x="' + (px + PAD + 6) + '" y="' + my + '" font-size="24.0" font-family="Arial,sans-serif" fill="#555" font-style="italic">' + esc(m.measureOwner) + '</text>');
-          my += 22;
-        }
+    if(fillCols>0) rect(SB+procCols*COL,py,fillCols*COL,H_SUB,'#f5f5f5');
+    py+=H_SUB;
+    allProcs.forEach(({proc,goalId},i)=>{
+      const c=gColor(goalId), px=SB+i*COL;
+      rect(px,py,COL,H_PM,c.light);
+      txt(px+PAD,py+PAD+10,10,'#777','start',true,false,'0.5','PROCESS MEASURES');
+      let my=py+PAD+9+12;
+      (proc.processMeasures||[]).forEach(m=>{
+        if(my>py+H_PM-8) return;
+        wrap((m.code?m.code+'  ':'')+( m.text||''),COL,F).forEach(ln=>{if(my<=py+H_PM-8){txt(px+PAD,my,F,'#222','start',false,false,null,ln);my+=F+3;}});
+        if(m.measureOwner&&my<=py+H_PM-8){txt(px+PAD+4,my,F-1,'#555','start',false,true,null,m.measureOwner);my+=F+3;}
       });
     });
-    if (fillCols > 0) rect(SB + procCols * COL, py, fillCols * COL, H_PM, '#f5f5f5');
-    return py + H_PM;
+    if(fillCols>0) rect(SB+procCols*COL,py,fillCols*COL,H_PM,'#f5f5f5');
+    return py+H_PM;
   };
 
-  // ── Draw in layout order ─────────────────────────────────────────────────
-  if (outFirst) {
-    y = drawOutcomes(y);
-    y = drawProcesses(y);
-  } else {
-    y = drawProcesses(y);
-    y = drawOutcomes(y);
-  }
+  if(outFirst){y=drawOutcomes(y);y=drawProcesses(y);}
+  else{y=drawProcesses(y);y=drawOutcomes(y);}
 
-  const svgW = Math.max(W, outW, hdrW);
-  const nl = String.fromCharCode(10);
-  // Use viewBox so SVG scales to fit — remove fixed width/height so viewer controls zoom
-  const svgStr = '<svg xmlns="http://www.w3.org/2000/svg" width="' + svgW + '" height="' + y + '" viewBox="0 0 ' + svgW + ' ' + y + '">' + nl + els.join(nl) + nl + '</svg>';
+  const svgW=Math.max(W,outW,hdrW);
+  const nl=String.fromCharCode(10);
+  // viewBox only — no fixed width/height so viewer can zoom freely
+  const svgStr='<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 '+svgW+' '+y+'">'+nl+els.join(nl)+nl+'</svg>';
 
-  const blob = new Blob([svgStr], { type: 'image/svg+xml' });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url;
-  a.download = (data.orgName || 'Map').replace(/[^a-z0-9]/gi, '_') + '_Fundamentals_Map.svg';
-  document.body.appendChild(a);
-  a.click();
-  document.body.removeChild(a);
+  const blob=new Blob([svgStr],{type:'image/svg+xml'});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement('a'); a.href=url;
+  a.download=(data.orgName||'Map').replace(/[^a-z0-9]/gi,'_')+'_Fundamentals_Map.svg';
+  document.body.appendChild(a); a.click(); document.body.removeChild(a);
   URL.revokeObjectURL(url);
 }
 

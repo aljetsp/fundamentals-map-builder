@@ -524,9 +524,9 @@ function MapTable({ data, editPath, setEditPath, setData, mapRef }) {
           </td>
         </tr>
         <tr>
-          <td colSpan={c1} style={cell({ background: '#e8f0fb' })}>{lbl('Mission')}<EC path={['mission']} value={data.mission} {...ecProps} /></td>
-          <td colSpan={c2} style={cell({ background: '#1b3d6e', color: '#fff', textAlign: 'center' })}>{lbl('Vision')}<EC path={['vision']} value={data.vision} dark {...ecProps} /></td>
-          <td colSpan={c3} style={cell({ background: '#1e1e1e', color: '#fff', textAlign: 'center' })}>{lbl('Values')}<EC path={['values']} value={data.values} dark {...ecProps} /></td>
+          <td colSpan={c1} style={cell({ background: '#e8f0fb', fontSize: 16, lineHeight: 1.5, padding: '12px 14px' })}>{lbl('Mission')}<EC path={['mission']} value={data.mission} {...ecProps} /></td>
+          <td colSpan={c2} style={cell({ background: '#1b3d6e', color: '#fff', textAlign: 'center', fontSize: 16, lineHeight: 1.5, padding: '12px 14px' })}>{lbl('Vision')}<EC path={['vision']} value={data.vision} dark {...ecProps} /></td>
+          <td colSpan={c3} style={cell({ background: '#1e1e1e', color: '#fff', textAlign: 'center', fontSize: 16, lineHeight: 1.5, padding: '12px 14px' })}>{lbl('Values')}<EC path={['values']} value={data.values} dark {...ecProps} /></td>
         </tr>
         {/* Row 2: Key Goals — always shown in header, aligned with the section immediately below */}
         <tr>

@@ -848,19 +848,25 @@ function exportToSvg(data) {
   const hdrGoals = hdrAlignOut ? outSpans : goalHdrCells;
   const c1 = Math.ceil(hdrCols / 3), c2 = Math.ceil((hdrCols - c1) / 2), c3 = hdrCols - c1 - c2;
 
-  // Text wrapping
+  // Text wrapping — handles literal newlines in data by splitting on both \n and spaces
   const wrap = (text, maxW, fs) => {
     if (!text) return [];
     const charW = fs * 0.52;
     const maxC  = Math.max(1, Math.floor((maxW - PAD * 2) / charW));
-    const words = (text + '').split(' ');
-    const lines = []; let line = '';
-    for (const w of words) {
-      const t = line ? line + ' ' + w : w;
-      if (t.length > maxC && line) { lines.push(line); line = w; }
-      else line = t;
+    // First split on literal newlines to get paragraphs, then wrap each
+    const paragraphs = (text + '').replace(/\r/g, '').split('\n');
+    const lines = [];
+    for (const para of paragraphs) {
+      if (!para.trim()) { lines.push(''); continue; }
+      const words = para.split(' ');
+      let line = '';
+      for (const w of words) {
+        const t = line ? line + ' ' + w : w;
+        if (t.length > maxC && line) { lines.push(line); line = w; }
+        else line = t;
+      }
+      if (line) lines.push(line);
     }
-    if (line) lines.push(line);
     return lines;
   };
 
@@ -896,33 +902,42 @@ function exportToSvg(data) {
 
   // ── HEADER (Foundations + Key Goals) ────────────────────────────────────
   const H_ORG  = 38;
-  const H_MVV  = Math.max(
-    textH(data.mission, c1 * hdrColW, F, 1.4),
-    textH(data.vision,  c2 * hdrColW, F, 1.4),
-    textH(data.values,  c3 * hdrColW, F, 1.4),
-    44
+  // MVV — fixed large font (18px), generous fixed height
+  const MVV_FS = 18;
+  const MVV_LABEL_H = 18;
+  const H_MVV = Math.max(
+    MVV_LABEL_H + textH(data.mission, c1 * hdrColW, MVV_FS, 1.45),
+    MVV_LABEL_H + textH(data.vision,  c2 * hdrColW, MVV_FS, 1.45),
+    MVV_LABEL_H + textH(data.values,  c3 * hdrColW, MVV_FS, 1.45),
+    100
   );
   const H_GOAL = 80;
 
   // Org name row
-  rect(0, y, hdrW, H_ORG + H_MVV, '#0d1b2a');  // sidebar Foundations
+  rect(0, y, hdrW, H_ORG + H_MVV, '#0d1b2a');
   vLabel(0, y, SB, H_ORG + H_MVV, 'Foundations');
   rect(SB, y, hdrW - SB, H_ORG, '#0d1b2a');
-  drawText(SB + PAD, y, hdrW - SB - PAD, data.orgName || '', 17, '#fff', true, 'left');
+  drawText(SB + PAD, y, hdrW - SB - PAD, data.orgName || '', 20, '#fff', true, 'left');
   y += H_ORG;
 
-  // MVV row
-  const mvv = [
-    { span: c1, bg: '#e8f0fb', text: data.mission, color: '#222', label: 'MISSION', lc: '#1b3d6e' },
-    { span: c2, bg: '#1b3d6e', text: data.vision,  color: '#fff', label: 'VISION',  lc: '#aaa' },
-    { span: c3, bg: '#1e1e1e', text: data.values,  color: '#fff', label: 'VALUES',  lc: '#aaa' },
+  // MVV row — 18px bold text, height sized to fit content
+  const mvvCells = [
+    { span: c1, bg: '#e8f0fb', text: data.mission, color: '#111', label: 'MISSION', lc: '#1b3d6e' },
+    { span: c2, bg: '#1b3d6e', text: data.vision,  color: '#fff', label: 'VISION',  lc: '#ccc' },
+    { span: c3, bg: '#1e1e1e', text: data.values,  color: '#fff', label: 'VALUES',  lc: '#ccc' },
   ];
   let mx = SB;
-  mvv.forEach(({ span, bg, text, color, label, lc }) => {
+  mvvCells.forEach(({ span, bg, text, color, label, lc }) => {
     const cw = span * hdrColW;
     rect(mx, y, cw, H_MVV, bg);
-    els.push('<text x="' + (mx + PAD) + '" y="' + (y + PAD + 9) + '" font-size="8" font-family="Arial,sans-serif" fill="' + lc + '" font-weight="bold" letter-spacing="0.5">' + label + '</text>');
-    drawText(mx, y + 10, cw, text, F, color, false, 'left');
+    // Label
+    els.push('<text x="' + (mx + PAD) + '" y="' + (y + MVV_LABEL_H - 4) + '" font-size="9" font-family="Arial,sans-serif" fill="' + lc + '" font-weight="bold" letter-spacing="0.8">' + label + '</text>');
+    // Content text at MVV_FS starting below label
+    const lh = MVV_FS * 1.45;
+    const lines = wrap(text, cw, MVV_FS);
+    lines.forEach((ln, i) => {
+      els.push('<text x="' + (mx + PAD) + '" y="' + (y + MVV_LABEL_H + MVV_FS + i * lh) + '" font-size="' + MVV_FS + '" font-family="Arial,sans-serif" fill="' + color + '">' + esc(ln) + '</text>');
+    });
     mx += cw;
   });
   y += H_MVV;
@@ -1137,7 +1152,8 @@ function exportToSvg(data) {
 
   const svgW = Math.max(W, outW, hdrW);
   const nl = String.fromCharCode(10);
-  const svgStr = '<svg xmlns="http://www.w3.org/2000/svg" width="' + svgW + '" height="' + y + '" viewBox="0 0 ' + svgW + ' ' + y + '">' + nl + els.join(nl) + nl + '</svg>';
+  // Use viewBox so SVG scales to fit — remove fixed width/height so viewer controls zoom
+  const svgStr = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ' + svgW + ' ' + y + '" style="width:100%;height:auto">' + nl + els.join(nl) + nl + '</svg>';
 
   const blob = new Blob([svgStr], { type: 'image/svg+xml' });
   const url = URL.createObjectURL(blob);
